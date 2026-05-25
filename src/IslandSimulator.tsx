@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { BuildingState, Mode, UpgradeState } from "./types";
 import { generateBuildings } from "./types";
 import {
@@ -13,6 +13,16 @@ import {
   Lock,
   RotateCcw,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 type UpgradeKey = keyof UpgradeState;
 
@@ -248,6 +258,9 @@ function IslandSimulator() {
   const [buildings, setBuildings] =
     useState<BuildingState[]>(generateBuildings());
   const [cleanAmount, setCleanAmount] = useState<string>("");
+  const [chartData, setChartData] = useState<
+    Array<{ level: number; earned: number; spent: number }>
+  >([{ level: 0, earned: 0, spent: 0 }]);
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
@@ -261,6 +274,14 @@ function IslandSimulator() {
 
   const levelTotalSnow = getMaterialsPerTick("Snow", snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
+
+  // Update chart data when levelsPassed changes
+  useEffect(() => {
+    setChartData((prev) => [
+      ...prev,
+      { level: levelsPassed, earned: money, spent: totalSpent },
+    ]);
+  }, [levelsPassed]);
 
   function getUpgradeCost(key: UpgradeKey): number {
     const currentLevel = upgrades[key];
@@ -384,6 +405,7 @@ function IslandSimulator() {
     setUpgrades(DEFAULT_UPGRADES);
     setBuildings(generateBuildings());
     setCleanAmount("");
+    setChartData([{ level: 0, earned: 0, spent: 0 }]);
   }
 
   return (
@@ -744,6 +766,67 @@ function IslandSimulator() {
                   })}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Graph */}
+        <div className="px-6 py-6 border-t border-slate-800/80">
+          <div className="mx-auto max-w-screen-2xl">
+            <h2 className="text-lg font-bold text-slate-100 mb-4">
+              Economy Stats
+            </h2>
+            <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/40">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis
+                    dataKey="level"
+                    stroke="#94a3b8"
+                    label={{
+                      value: "Level",
+                      position: "insideBottomRight",
+                      offset: -5,
+                    }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    label={{
+                      value: "$ Amount",
+                      angle: -90,
+                      position: "insideLeft",
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1e293b",
+                      border: "1px solid #475569",
+                    }}
+                    labelStyle={{ color: "#e2e8f0" }}
+                    formatter={(value) =>
+                      typeof value === "number" ? `$${fmt(value)}` : value
+                    }
+                    labelFormatter={(label) => `Level ${label}`}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                  <Line
+                    type="monotone"
+                    dataKey="earned"
+                    stroke="#a78bfa"
+                    name="Money Earned"
+                    strokeWidth={2}
+                    dot={{ fill: "#a78bfa", r: 3 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="spent"
+                    stroke="#f87171"
+                    name="Money Spent"
+                    strokeWidth={2}
+                    dot={{ fill: "#f87171", r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
