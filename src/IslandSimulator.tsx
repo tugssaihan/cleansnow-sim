@@ -11,6 +11,8 @@ import {
   Zap,
   Lock,
   RotateCcw,
+  Settings,
+  X,
 } from "lucide-react";
 import {
   LineChart,
@@ -244,27 +246,463 @@ function BuildingCard({
   );
 }
 
+interface GameSettings {
+  snowSpeedBaseCost: number;
+  snowSpeedIncrement: number;
+  snowSizeBaseCost: number;
+  snowSizeIncrement: number;
+  capacityBaseCost: number;
+  capacityIncrement: number;
+  moveSpeedBaseCost: number;
+  moveSpeedIncrement: number;
+  woodSpeedBaseCost: number;
+  woodSpeedIncrement: number;
+  woodSizeBaseCost: number;
+  woodSizeIncrement: number;
+  stoneSpeedBaseCost: number;
+  stoneSpeedIncrement: number;
+  stoneSizeBaseCost: number;
+  stoneSizeIncrement: number;
+  maxSpeed: number;
+  minSpeed: number;
+}
+
+const DEFAULT_SETTINGS: GameSettings = {
+  snowSpeedBaseCost: 10,
+  snowSpeedIncrement: 70,
+  snowSizeBaseCost: 10,
+  snowSizeIncrement: 70,
+  capacityBaseCost: 10,
+  capacityIncrement: 150,
+  moveSpeedBaseCost: 10,
+  moveSpeedIncrement: 150,
+  woodSpeedBaseCost: 200,
+  woodSpeedIncrement: 100,
+  woodSizeBaseCost: 200,
+  woodSizeIncrement: 100,
+  stoneSpeedBaseCost: 400,
+  stoneSpeedIncrement: 130,
+  stoneSizeBaseCost: 400,
+  stoneSizeIncrement: 130,
+  maxSpeed: 13,
+  minSpeed: 6.5,
+};
+
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  settings: GameSettings;
+  onSettingsChange: (settings: GameSettings) => void;
+}
+
+function SettingsModal({
+  isOpen,
+  onClose,
+  settings,
+  onSettingsChange,
+}: SettingsModalProps) {
+  const [localSettings, setLocalSettings] = useState(settings);
+
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings, isOpen]);
+
+  const handleInputChange = (key: keyof GameSettings, value: string) => {
+    const numValue = parseInt(value, 10) || 0;
+    setLocalSettings((prev) => ({
+      ...prev,
+      [key]: numValue,
+    }));
+  };
+
+  const handleSave = () => {
+    onSettingsChange(localSettings);
+    onClose();
+  };
+
+  const handleReset = () => {
+    setLocalSettings(DEFAULT_SETTINGS);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-2xl max-h-[90vh] overflow-y-auto w-full mx-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Settings className="h-6 w-6 text-sky-400" />
+            Game Settings
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Snow Upgrades */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-sky-300 mb-3">
+              Snow Upgrades
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.snowSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("snowSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.snowSpeedIncrement}
+                  onChange={(e) =>
+                    handleInputChange("snowSpeedIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.snowSizeBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("snowSizeBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.snowSizeIncrement}
+                  onChange={(e) =>
+                    handleInputChange("snowSizeIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Capacity & Move Speed */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-cyan-300 mb-3">
+              Capacity & Move Speed
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Capacity Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.capacityBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("capacityBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Capacity Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.capacityIncrement}
+                  onChange={(e) =>
+                    handleInputChange("capacityIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Move Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.moveSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("moveSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Move Speed Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.moveSpeedIncrement}
+                  onChange={(e) =>
+                    handleInputChange("moveSpeedIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Wood Upgrades */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-amber-300 mb-3">
+              Wood Upgrades
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.woodSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("woodSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.woodSpeedIncrement}
+                  onChange={(e) =>
+                    handleInputChange("woodSpeedIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.woodSizeBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("woodSizeBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.woodSizeIncrement}
+                  onChange={(e) =>
+                    handleInputChange("woodSizeIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stone Upgrades */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-slate-300 mb-3">
+              Stone Upgrades
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.stoneSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("stoneSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.stoneSpeedIncrement}
+                  onChange={(e) =>
+                    handleInputChange("stoneSpeedIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.stoneSizeBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("stoneSizeBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Increment
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.stoneSizeIncrement}
+                  onChange={(e) =>
+                    handleInputChange("stoneSizeIncrement", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Speed Degradation Formula */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-cyan-300 mb-3">
+              Speed Degradation (Every 3 Levels)
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Max Speed: {localSettings.maxSpeed}
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.maxSpeed}
+                  onChange={(e) =>
+                    handleInputChange("maxSpeed", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Min Speed: {localSettings.minSpeed.toFixed(1)}
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={localSettings.minSpeed}
+                  onChange={(e) =>
+                    handleInputChange("minSpeed", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-slate-700">
+            <button
+              onClick={handleReset}
+              className="flex-1 rounded-lg bg-slate-700/40 text-slate-300 border border-slate-600/50 px-4 py-2 font-bold transition-all duration-200 hover:bg-slate-700/60 active:scale-95"
+            >
+              Reset to Defaults
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-lg bg-slate-700/40 text-slate-300 border border-slate-600/50 px-4 py-2 font-bold transition-all duration-200 hover:bg-slate-700/60 active:scale-95"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-4 py-2 font-bold transition-all duration-200 hover:bg-emerald-500/30 active:scale-95"
+            >
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IslandSimulator() {
-  const [money, setMoney] = useState(0);
-  const [ice, setIce] = useState(0);
-  const [wood, setWood] = useState(0);
-  const [stone, setStone] = useState(0);
-  const [currentMode, setCurrentMode] = useState<Mode>("Snow");
-  const [snowLevel, setSnowLevel] = useState(1);
-  const [levelsPassed, setLevelsPassed] = useState(0);
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [totalEarned, setTotalEarned] = useState(0);
-  const [upgrades, setUpgrades] = useState<UpgradeState>(DEFAULT_UPGRADES);
-  const [buildings, setBuildings] =
-    useState<BuildingState[]>(generateBuildings());
+  // Helper to load from localStorage - used in useState initializers
+  const getInitialState = <T,>(key: string, defaultValue: T): T => {
+    try {
+      const savedState = localStorage.getItem("cleansnowGameState");
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        return state[key] ?? defaultValue;
+      }
+    } catch (error) {
+      console.error("Failed to load game state:", error);
+    }
+    return defaultValue;
+  };
+
+  const [money, setMoney] = useState(() => getInitialState("money", 0));
+  const [gameSettings, setGameSettings] =
+    useState<GameSettings>(DEFAULT_SETTINGS);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [ice, setIce] = useState(() => getInitialState("ice", 0));
+  const [wood, setWood] = useState(() => getInitialState("wood", 0));
+  const [stone, setStone] = useState(() => getInitialState("stone", 0));
+  const [currentMode, setCurrentMode] = useState<Mode>(() =>
+    getInitialState("currentMode", "Snow"),
+  );
+  const [snowLevel, setSnowLevel] = useState(() =>
+    getInitialState("snowLevel", 1),
+  );
+  const [levelsPassed, setLevelsPassed] = useState(() =>
+    getInitialState("levelsPassed", 0),
+  );
+  const [totalSpent, setTotalSpent] = useState(() =>
+    getInitialState("totalSpent", 0),
+  );
+  const [totalEarned, setTotalEarned] = useState(() =>
+    getInitialState("totalEarned", 0),
+  );
+  const [upgrades, setUpgrades] = useState<UpgradeState>(() =>
+    getInitialState("upgrades", DEFAULT_UPGRADES),
+  );
+  const [buildings, setBuildings] = useState<BuildingState[]>(() =>
+    getInitialState("buildings", generateBuildings()),
+  );
   const [cleanAmount, setCleanAmount] = useState<string>("");
   const [chartData, setChartData] = useState<
     Array<{ level: number; earned: number; spent: number }>
-  >([]);
-  const [currentSpeed, setCurrentSpeed] = useState(4);
+  >(() => getInitialState("chartData", []));
+  const [currentSpeed, setCurrentSpeed] = useState(() =>
+    getInitialState("currentSpeed", 4),
+  );
   const [moveSpeedChartData, setMoveSpeedChartData] = useState<
     Array<{ level: number; speed: number; maxSpeed: number; minSpeed: number }>
-  >([]);
+  >(() => getInitialState("moveSpeedChartData", []));
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
@@ -289,11 +727,20 @@ function IslandSimulator() {
     // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
     if (levelsPassed > 0 && levelsPassed % 3 === 0) {
       setCurrentSpeed((prev) => {
-        const minSpeed = 6.5;
-        const newSpeed = Math.max(minSpeed, (minSpeed + prev) / 2);
+        const { minSpeed } = gameSettings;
+        const SPEED_DEGRADATION_RATE = 0.5;
+        const newSpeed = Math.max(
+          minSpeed,
+          minSpeed + (prev - minSpeed) * (1 - SPEED_DEGRADATION_RATE),
+        );
         setMoveSpeedChartData((chartPrev) => [
           ...chartPrev,
-          { level: levelsPassed, speed: newSpeed, maxSpeed: 13, minSpeed: 6.5 },
+          {
+            level: levelsPassed,
+            speed: newSpeed,
+            maxSpeed: gameSettings.maxSpeed,
+            minSpeed: gameSettings.minSpeed,
+          },
         ]);
         return newSpeed;
       });
@@ -303,12 +750,12 @@ function IslandSimulator() {
         {
           level: levelsPassed,
           speed: currentSpeed,
-          maxSpeed: 13,
-          minSpeed: 6.5,
+          maxSpeed: gameSettings.maxSpeed,
+          minSpeed: gameSettings.minSpeed,
         },
       ]);
     }
-  }, [levelsPassed]);
+  }, [levelsPassed, gameSettings]);
 
   // Update move speed chart data instantly when currentSpeed changes
   useEffect(() => {
@@ -321,15 +768,15 @@ function IslandSimulator() {
             {
               level: lastEntry.level,
               speed: currentSpeed,
-              maxSpeed: 13,
-              minSpeed: 6.5,
+              maxSpeed: gameSettings.maxSpeed,
+              minSpeed: gameSettings.minSpeed,
             },
           ];
         }
         return prev;
       });
     }
-  }, [currentSpeed, levelsPassed]);
+  }, [currentSpeed, levelsPassed, gameSettings]);
 
   // Update economy chart data instantly when totalEarned or totalSpent changes
   useEffect(() => {
@@ -350,6 +797,42 @@ function IslandSimulator() {
     }
   }, [totalEarned, totalSpent, levelsPassed]);
 
+  // Save game state to localStorage whenever it changes
+  useEffect(() => {
+    const gameState = {
+      money,
+      ice,
+      wood,
+      stone,
+      currentMode,
+      snowLevel,
+      levelsPassed,
+      totalSpent,
+      totalEarned,
+      upgrades,
+      buildings,
+      chartData,
+      currentSpeed,
+      moveSpeedChartData,
+    };
+    localStorage.setItem("cleansnowGameState", JSON.stringify(gameState));
+  }, [
+    money,
+    ice,
+    wood,
+    stone,
+    currentMode,
+    snowLevel,
+    levelsPassed,
+    totalSpent,
+    totalEarned,
+    upgrades,
+    buildings,
+    chartData,
+    currentSpeed,
+    moveSpeedChartData,
+  ]);
+
   function getLevelProgressBonus(level: number): number {
     // Levels 1-3: 33, Levels 4-6: 66, Levels 7-9: 99, etc
     return Math.ceil(level / 3) * 33;
@@ -360,25 +843,58 @@ function IslandSimulator() {
     const max = MAX_UPGRADE_LEVEL[key];
     if (max && currentLevel >= max) return 0; // Can't upgrade further
 
-    // Snow upgrades: start at 10$, increment 70 for speed/size, 150 for capacity/moveSpeed
-    if (key === "gatherSpeed" || key === "gatherSize") {
-      return 10 + (currentLevel - 1) * 70;
+    // Snow upgrades
+    if (key === "gatherSpeed") {
+      return (
+        gameSettings.snowSpeedBaseCost +
+        (currentLevel - 1) * gameSettings.snowSpeedIncrement
+      );
+    }
+    if (key === "gatherSize") {
+      return (
+        gameSettings.snowSizeBaseCost +
+        (currentLevel - 1) * gameSettings.snowSizeIncrement
+      );
     }
     if (key === "capacity") {
-      return 10 + (currentLevel - 1) * 150;
+      return (
+        gameSettings.capacityBaseCost +
+        (currentLevel - 1) * gameSettings.capacityIncrement
+      );
     }
     if (key === "moveSpeed") {
-      return 10 + (currentLevel - 1) * 150;
+      return (
+        gameSettings.moveSpeedBaseCost +
+        (currentLevel - 1) * gameSettings.moveSpeedIncrement
+      );
     }
 
-    // Wood upgrades: start at 200$, increase by 100$ per upgrade
-    if (key === "woodGatherSpeed" || key === "woodGatherSize") {
-      return 200 + (currentLevel - 1) * 100;
+    // Wood upgrades
+    if (key === "woodGatherSpeed") {
+      return (
+        gameSettings.woodSpeedBaseCost +
+        (currentLevel - 1) * gameSettings.woodSpeedIncrement
+      );
+    }
+    if (key === "woodGatherSize") {
+      return (
+        gameSettings.woodSizeBaseCost +
+        (currentLevel - 1) * gameSettings.woodSizeIncrement
+      );
     }
 
-    // Stone upgrades: start at 400$, increase by 130$ per upgrade
-    if (key === "stoneGatherSpeed" || key === "stoneGatherSize") {
-      return 400 + (currentLevel - 1) * 130;
+    // Stone upgrades
+    if (key === "stoneGatherSpeed") {
+      return (
+        gameSettings.stoneSpeedBaseCost +
+        (currentLevel - 1) * gameSettings.stoneSpeedIncrement
+      );
+    }
+    if (key === "stoneGatherSize") {
+      return (
+        gameSettings.stoneSizeBaseCost +
+        (currentLevel - 1) * gameSettings.stoneSizeIncrement
+      );
     }
 
     return 0;
@@ -396,7 +912,7 @@ function IslandSimulator() {
 
     // Increase move speed when moveSpeed upgrade is purchased
     if (key === "moveSpeed") {
-      setCurrentSpeed((prev) => Math.min(13, prev + 1));
+      setCurrentSpeed((prev) => Math.min(gameSettings.maxSpeed, prev + 1));
     }
   }
 
@@ -494,8 +1010,35 @@ function IslandSimulator() {
     setMoveSpeedChartData([]);
   }
 
+  function handleSettingsChange(newSettings: GameSettings) {
+    setGameSettings(newSettings);
+    // Reset the game when settings change
+    setMoney(0);
+    setIce(0);
+    setWood(0);
+    setStone(0);
+    setCurrentMode("Snow");
+    setSnowLevel(1);
+    setLevelsPassed(0);
+    setTotalSpent(0);
+    setTotalEarned(0);
+    setUpgrades(DEFAULT_UPGRADES);
+    setBuildings(generateBuildings());
+    setCleanAmount("");
+    setChartData([]);
+    setCurrentSpeed(4);
+    setMoveSpeedChartData([]);
+  }
+
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100">
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        settings={gameSettings}
+        onSettingsChange={handleSettingsChange}
+      />
+
       {/* Header */}
       <div className="border-b border-slate-800/80 bg-[#080c14]/90 backdrop-blur-md px-6 py-4">
         <div className="mx-auto max-w-screen-2xl flex items-center justify-between gap-6">
@@ -549,6 +1092,14 @@ function IslandSimulator() {
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => setSettingsModalOpen(true)}
+            className="flex items-center gap-2 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-sky-500/30 active:scale-95"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
           <button
             type="button"
             onClick={resetGame}
@@ -932,7 +1483,10 @@ function IslandSimulator() {
                     />
                     <YAxis
                       stroke="#94a3b8"
-                      domain={[6, 13]}
+                      domain={[
+                        Math.floor(gameSettings.minSpeed),
+                        gameSettings.maxSpeed,
+                      ]}
                       label={{
                         value: "Speed",
                         angle: -90,
@@ -955,7 +1509,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="maxSpeed"
                       stroke="#ef4444"
-                      name="Max Speed (13)"
+                      name={`Max Speed (${gameSettings.maxSpeed})`}
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
@@ -972,7 +1526,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="minSpeed"
                       stroke="#f59e0b"
-                      name="Min Speed (6.5)"
+                      name={`Min Speed (${gameSettings.minSpeed.toFixed(1)})`}
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
