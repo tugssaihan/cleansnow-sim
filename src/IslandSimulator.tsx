@@ -9,7 +9,6 @@ import {
   Truck,
   Wallet,
   Zap,
-  Trash2,
   Lock,
   RotateCcw,
 } from "lucide-react";
@@ -184,7 +183,7 @@ function BuildingCard({
 
   return (
     <div
-      className={`relative rounded-xl border-2 transition-all duration-300 ${
+      className={`relative rounded-lg border-2 transition-all duration-300 ${
         building.isBuilt
           ? "border-emerald-500/40 bg-emerald-500/5"
           : isNextToBuild
@@ -192,29 +191,29 @@ function BuildingCard({
             : "border-slate-700/40 bg-slate-900/30"
       }`}
     >
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="inline-block rounded-md bg-slate-700/60 px-2 py-0.5 text-xs font-bold text-slate-300">
+      <div className="p-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="inline-block rounded-md bg-slate-700/60 px-1.5 py-0.5 text-xs font-bold text-slate-300">
             #{building.id}
           </span>
-          {building.isBuilt && <div className="text-lg">✓</div>}
+          {building.isBuilt && <div className="text-sm">✓</div>}
         </div>
-        <p className="text-base font-black text-slate-100 mb-3">
-          {building.floor} давхар байшин
+        <p className="text-xs font-bold text-slate-100 mb-2">
+          Давхар {building.floor}
         </p>
-        <div className="space-y-1.5 mb-3 text-xs">
+        <div className="space-y-0.5 mb-2 text-xs">
           {materialsDisplay.map((mat) => (
-            <div key={mat.label} className="flex justify-between">
-              <span className="text-slate-400">{mat.label}</span>
+            <div key={mat.label} className="flex justify-between text-xs">
+              <span className="text-slate-400">{mat.label.charAt(0)}</span>
               <span className={`font-bold ${mat.color}`}>
                 {fmt(mat.have)}/{fmt(mat.need)}
               </span>
             </div>
           ))}
           <div className="flex justify-between">
-            <span className="text-slate-400">Reward</span>
+            <span className="text-slate-400">$</span>
             <span className="font-bold text-violet-400">
-              ${fmt(building.moneyReward)}
+              {fmt(building.moneyReward)}
             </span>
           </div>
         </div>
@@ -222,22 +221,22 @@ function BuildingCard({
         {building.isBuilt ? (
           <button
             disabled
-            className="w-full rounded-lg bg-emerald-500/20 py-2 text-xs font-bold text-emerald-300 cursor-default"
+            className="w-full rounded-md bg-emerald-500/20 py-1 text-xs font-bold text-emerald-300 cursor-default"
           >
-            Built
+            ✓
           </button>
         ) : (
           <button
             type="button"
             onClick={onBuild}
             disabled={!canBuild}
-            className={`w-full rounded-lg py-2 text-xs font-bold transition-all duration-200 active:scale-95 ${
+            className={`w-full rounded-md py-1 text-xs font-bold transition-all duration-200 active:scale-95 ${
               canBuild
                 ? "bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30"
                 : "bg-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
             }`}
           >
-            {canBuild ? "Build" : "Not Enough"}
+            {canBuild ? "Build" : "No"}
           </button>
         )}
       </div>
@@ -254,13 +253,18 @@ function IslandSimulator() {
   const [snowLevel, setSnowLevel] = useState(1);
   const [levelsPassed, setLevelsPassed] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
   const [upgrades, setUpgrades] = useState<UpgradeState>(DEFAULT_UPGRADES);
   const [buildings, setBuildings] =
     useState<BuildingState[]>(generateBuildings());
   const [cleanAmount, setCleanAmount] = useState<string>("");
   const [chartData, setChartData] = useState<
     Array<{ level: number; earned: number; spent: number }>
-  >([{ level: 0, earned: 0, spent: 0 }]);
+  >([]);
+  const [currentSpeed, setCurrentSpeed] = useState(4);
+  const [moveSpeedChartData, setMoveSpeedChartData] = useState<
+    Array<{ level: number; speed: number; maxSpeed: number; minSpeed: number }>
+  >([]);
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
@@ -275,13 +279,81 @@ function IslandSimulator() {
   const levelTotalSnow = getMaterialsPerTick("Snow", snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
 
-  // Update chart data when levelsPassed changes
+  // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
   useEffect(() => {
     setChartData((prev) => [
       ...prev,
-      { level: levelsPassed, earned: money, spent: totalSpent },
+      { level: levelsPassed, earned: totalEarned, spent: totalSpent },
     ]);
+
+    // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
+    if (levelsPassed > 0 && levelsPassed % 3 === 0) {
+      setCurrentSpeed((prev) => {
+        const minSpeed = 6.5;
+        const newSpeed = Math.max(minSpeed, (minSpeed + prev) / 2);
+        setMoveSpeedChartData((chartPrev) => [
+          ...chartPrev,
+          { level: levelsPassed, speed: newSpeed, maxSpeed: 13, minSpeed: 6.5 },
+        ]);
+        return newSpeed;
+      });
+    } else if (levelsPassed > 0) {
+      setMoveSpeedChartData((prev) => [
+        ...prev,
+        {
+          level: levelsPassed,
+          speed: currentSpeed,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        },
+      ]);
+    }
   }, [levelsPassed]);
+
+  // Update move speed chart data instantly when currentSpeed changes
+  useEffect(() => {
+    if (levelsPassed > 0) {
+      setMoveSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        if (lastEntry && lastEntry.speed !== currentSpeed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: lastEntry.level,
+              speed: currentSpeed,
+              maxSpeed: 13,
+              minSpeed: 6.5,
+            },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [currentSpeed, levelsPassed]);
+
+  // Update economy chart data instantly when totalEarned or totalSpent changes
+  useEffect(() => {
+    if (levelsPassed > 0) {
+      setChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        if (
+          lastEntry &&
+          (lastEntry.earned !== totalEarned || lastEntry.spent !== totalSpent)
+        ) {
+          return [
+            ...prev.slice(0, -1),
+            { level: lastEntry.level, earned: totalEarned, spent: totalSpent },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [totalEarned, totalSpent, levelsPassed]);
+
+  function getLevelProgressBonus(level: number): number {
+    // Levels 1-3: 33, Levels 4-6: 66, Levels 7-9: 99, etc
+    return Math.ceil(level / 3) * 33;
+  }
 
   function getUpgradeCost(key: UpgradeKey): number {
     const currentLevel = upgrades[key];
@@ -321,6 +393,11 @@ function IslandSimulator() {
       ...prev,
       [key]: prev[key] + 1,
     }));
+
+    // Increase move speed when moveSpeed upgrade is purchased
+    if (key === "moveSpeed") {
+      setCurrentSpeed((prev) => Math.min(13, prev + 1));
+    }
   }
 
   function buildBuilding(buildingId: number) {
@@ -358,6 +435,8 @@ function IslandSimulator() {
   function clearLevelPerfect() {
     const earnedAmount = levelTotalSnow;
     const moneyFromMaterial = earnedAmount * getSnowPriceMultiplier(snowLevel);
+    const levelProgressBonus = getLevelProgressBonus(snowLevel);
+    const totalMoney = moneyFromMaterial + levelProgressBonus;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -370,13 +449,16 @@ function IslandSimulator() {
 
     setLevelsPassed((l) => l + 1);
     setSnowLevel((sl) => sl + 1);
-    setMoney((m) => m + moneyFromMaterial);
+    setMoney((m) => m + totalMoney);
+    setTotalEarned((te) => te + totalMoney);
   }
 
   function clearLevelCustom() {
     const amount = parseInt(cleanAmount, 10);
     if (!amount || amount < minRequiredSnow || amount > levelTotalSnow) return;
     const moneyFromMaterial = amount * getSnowPriceMultiplier(snowLevel);
+    const levelProgressBonus = getLevelProgressBonus(snowLevel);
+    const totalMoney = moneyFromMaterial + levelProgressBonus;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -389,7 +471,8 @@ function IslandSimulator() {
 
     setLevelsPassed((l) => l + 1);
     setSnowLevel((sl) => sl + 1);
-    setMoney((m) => m + moneyFromMaterial);
+    setMoney((m) => m + totalMoney);
+    setTotalEarned((te) => te + totalMoney);
     setCleanAmount("");
   }
 
@@ -402,10 +485,13 @@ function IslandSimulator() {
     setSnowLevel(1);
     setLevelsPassed(0);
     setTotalSpent(0);
+    setTotalEarned(0);
     setUpgrades(DEFAULT_UPGRADES);
     setBuildings(generateBuildings());
     setCleanAmount("");
-    setChartData([{ level: 0, earned: 0, spent: 0 }]);
+    setChartData([]);
+    setCurrentSpeed(4);
+    setMoveSpeedChartData([]);
   }
 
   return (
@@ -414,11 +500,8 @@ function IslandSimulator() {
       <div className="border-b border-slate-800/80 bg-[#080c14]/90 backdrop-blur-md px-6 py-4">
         <div className="mx-auto max-w-screen-2xl flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-sky-500 to-indigo-600">
-              <Snowflake className="h-4 w-4 text-white" />
-            </div>
             <span className="text-lg font-bold tracking-tight">
-              CleanSnow Sim
+              Clean Snow Simulator
             </span>
           </div>
 
@@ -478,9 +561,9 @@ function IslandSimulator() {
       </div>
 
       <div className="mx-auto max-w-screen-2xl px-4 py-6">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* ── Gathering Scene ── */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-180px)] overflow-y-auto">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Snowflake className="h-5 w-5 text-sky-400" />
               Материал цуглуулах
@@ -553,8 +636,7 @@ function IslandSimulator() {
                 onClick={clearLevelPerfect}
                 className="w-full rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-emerald-500/30 active:scale-95"
               >
-                <Trash2 className="h-4 w-4 inline mr-2" />
-                Давах
+                Complete Level
               </button>
 
               <div className="flex gap-2">
@@ -587,7 +669,7 @@ function IslandSimulator() {
               <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
                 Upgrades
               </p>
-              <div className="grid gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {(Object.keys(upgrades) as UpgradeKey[])
                   .filter((key) => {
                     // Show mode-specific upgrades
@@ -625,41 +707,41 @@ function IslandSimulator() {
                     return (
                       <div
                         key={key}
-                        className="rounded-lg bg-slate-950/40 px-3 py-2.5 border border-slate-700/40 space-y-2"
+                        className="rounded-lg bg-slate-950/40 px-2 py-2 border border-slate-700/40 space-y-1.5"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={meta.color}>{meta.icon}</span>
-                            <span className="text-xs font-semibold text-slate-300">
-                              {meta.label}
-                            </span>
-                          </div>
-                          <span className="text-sm font-bold text-slate-100">
-                            {level}
-                            {max && (
-                              <span className="text-xs text-slate-600 ml-0.5">
-                                /{max}
-                              </span>
-                            )}
+                        <div className="flex items-center gap-1">
+                          <span className={`text-sm ${meta.color}`}>
+                            {meta.icon}
                           </span>
+                          <span className="text-xs font-semibold text-slate-300 truncate">
+                            {meta.label}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-slate-100 px-0.5">
+                          {level}
+                          {max && (
+                            <span className="text-xs text-slate-600 ml-0.5">
+                              /{max}
+                            </span>
+                          )}
                         </div>
                         {!isMaxed && (
                           <button
                             type="button"
                             onClick={() => buyUpgrade(key)}
                             disabled={!canAfford}
-                            className={`w-full rounded-md py-1.5 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                            className={`w-full rounded-md py-1 text-xs font-bold transition-all duration-200 active:scale-95 ${
                               canAfford
                                 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
                                 : "bg-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
                             }`}
                           >
-                            Upgrade ${fmt(cost)}
+                            ${fmt(cost)}
                           </button>
                         )}
                         {isMaxed && (
-                          <div className="w-full rounded-md py-1.5 px-2 text-xs font-bold text-center bg-slate-800/30 text-slate-500">
-                            Max Level
+                          <div className="w-full rounded-md py-1 px-2 text-xs font-bold text-center bg-slate-800/30 text-slate-500">
+                            Max
                           </div>
                         )}
                       </div>
@@ -690,10 +772,10 @@ function IslandSimulator() {
           </div>
 
           {/* ── Island Scene ── */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-180px)] overflow-y-auto">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Building2 className="h-5 w-5 text-emerald-400" />
-              Арал
+              Барилга барих
             </h2>
 
             <div className="space-y-6">
@@ -705,7 +787,7 @@ function IslandSimulator() {
                     {island1Built}/14
                   </span>
                 </div>
-                <div className="grid gap-2 grid-cols-2">
+                <div className="grid gap-2 grid-cols-4">
                   {island1Buildings.map((building) => {
                     const req = building.requiredMaterials;
                     const hasEnoughMaterials =
@@ -735,12 +817,12 @@ function IslandSimulator() {
               {/* Island 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-amber-400">Island 2</h3>
+                  <h3 className="font-bold text-amber-400">Арал 2</h3>
                   <span className="text-xs font-bold bg-amber-500/15 text-amber-300 px-2.5 py-1 rounded-lg">
                     {island2Built}/14
                   </span>
                 </div>
-                <div className="grid gap-2 grid-cols-2">
+                <div className="grid gap-2 grid-cols-4">
                   {island2Buildings.map((building) => {
                     const req = building.requiredMaterials;
                     const hasEnoughMaterials =
@@ -768,65 +850,136 @@ function IslandSimulator() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats Graph */}
-        <div className="px-6 py-6 border-t border-slate-800/80">
-          <div className="mx-auto max-w-screen-2xl">
-            <h2 className="text-lg font-bold text-slate-100 mb-4">
-              Economy Stats
-            </h2>
-            <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/40">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis
-                    dataKey="level"
-                    stroke="#94a3b8"
-                    label={{
-                      value: "Level",
-                      position: "insideBottomRight",
-                      offset: -5,
-                    }}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    label={{
-                      value: "$ Amount",
-                      angle: -90,
-                      position: "insideLeft",
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1e293b",
-                      border: "1px solid #475569",
-                    }}
-                    labelStyle={{ color: "#e2e8f0" }}
-                    formatter={(value) =>
-                      typeof value === "number" ? `$${fmt(value)}` : value
-                    }
-                    labelFormatter={(label) => `Level ${label}`}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                  <Line
-                    type="monotone"
-                    dataKey="earned"
-                    stroke="#a78bfa"
-                    name="Money Earned"
-                    strokeWidth={2}
-                    dot={{ fill: "#a78bfa", r: 3 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="spent"
-                    stroke="#f87171"
-                    name="Money Spent"
-                    strokeWidth={2}
-                    dot={{ fill: "#f87171", r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          {/* ── Graphs ── */}
+          <div className="flex flex-col gap-6 h-[calc(100vh-100px)]">
+            {/* Stats Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm flex-1 flex flex-col min-h-0">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Орлого зарлагын граф
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      label={{
+                        value: "Level",
+                        position: "insideBottomRight",
+                        offset: -5,
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      label={{
+                        value: "$ Amount",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? `$${fmt(value)}` : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="earned"
+                      stroke="#a78bfa"
+                      name="Олсон мөнгө"
+                      strokeWidth={2}
+                      dot={{ fill: "#a78bfa", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spent"
+                      stroke="#f87171"
+                      name="Зарцуулсан мөнгө"
+                      strokeWidth={2}
+                      dot={{ fill: "#f87171", r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Move Speed Degradation Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm flex-1 flex flex-col min-h-0">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Машины хурд граф
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={moveSpeedChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      label={{
+                        value: "Level",
+                        position: "insideBottomRight",
+                        offset: -5,
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[6, 13]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(2) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="maxSpeed"
+                      stroke="#ef4444"
+                      name="Max Speed (13)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed"
+                      stroke="#06b6d4"
+                      name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#06b6d4", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#f59e0b"
+                      name="Min Speed (6.5)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>
