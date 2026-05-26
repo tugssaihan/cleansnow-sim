@@ -587,10 +587,10 @@ function SettingsModal({
             </div>
           </div>
 
-          {/* Speed Degradation Formula */}
+          {/* Speed Decrease Formula */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
             <h3 className="text-lg font-bold text-cyan-300 mb-3">
-              Speed Degradation (Every 3 Levels)
+              Speed Decrease (Every 3 Levels)
             </h3>
             <div className="space-y-3">
               <div>
@@ -1248,6 +1248,39 @@ function IslandSimulator() {
                     }
                     return false;
                   })
+                  .sort((a, b) => {
+                    // Keep order for Snow mode
+                    if (currentMode === "Snow") {
+                      const snowOrder = [
+                        "gatherSpeed",
+                        "gatherSize",
+                        "capacity",
+                        "moveSpeed",
+                      ];
+                      return snowOrder.indexOf(a) - snowOrder.indexOf(b);
+                    }
+                    // For Wood, put mode-specific upgrades first, then capacity & moveSpeed
+                    if (currentMode === "Wood") {
+                      const order: Record<string, number> = {
+                        woodGatherSpeed: 0,
+                        woodGatherSize: 1,
+                        capacity: 2,
+                        moveSpeed: 3,
+                      };
+                      return (order[a] ?? 4) - (order[b] ?? 4);
+                    }
+                    // For Stone, put mode-specific upgrades first, then capacity & moveSpeed
+                    if (currentMode === "Stone") {
+                      const order: Record<string, number> = {
+                        stoneGatherSpeed: 0,
+                        stoneGatherSize: 1,
+                        capacity: 2,
+                        moveSpeed: 3,
+                      };
+                      return (order[a] ?? 4) - (order[b] ?? 4);
+                    }
+                    return 0;
+                  })
                   .map((key) => {
                     const level = upgrades[key];
                     const meta = UPGRADE_META[key];
@@ -1446,7 +1479,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="earned"
                       stroke="#a78bfa"
-                      name="Олсон мөнгө"
+                      name="Орлого"
                       strokeWidth={2}
                       dot={{ fill: "#a78bfa", r: 3 }}
                     />
@@ -1454,7 +1487,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="spent"
                       stroke="#f87171"
-                      name="Зарцуулсан мөнгө"
+                      name="Зарлага"
                       strokeWidth={2}
                       dot={{ fill: "#f87171", r: 3 }}
                     />
