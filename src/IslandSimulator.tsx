@@ -753,7 +753,7 @@ function IslandSimulator() {
   const levelTotalSnow = getMaterialsPerTick("Snow", snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
 
-  // Initialize gathering speed charts with level 0 starting values
+  // Initialize Snow gathering speed chart with level 0 starting value (always available)
   useEffect(() => {
     if (gatheringSpeedChartData.length === 0) {
       setGatheringSpeedChartData([
@@ -765,17 +765,25 @@ function IslandSimulator() {
         },
       ]);
     }
-    if (woodGatheringSpeedChartData.length === 0) {
+  }, []);
+
+  // Initialize Wood gathering speed chart when Wood mode unlocks
+  useEffect(() => {
+    if (canUseWood && woodGatheringSpeedChartData.length === 0) {
       setWoodGatheringSpeedChartData([
         {
-          level: 0,
+          level: levelsPassed,
           speed: 5,
           maxSpeed: 20,
           minSpeed: 5,
         },
       ]);
     }
-    if (stoneGatheringSpeedChartData.length === 0) {
+  }, [canUseWood]);
+
+  // Initialize Stone gathering speed chart when Stone mode unlocks
+  useEffect(() => {
+    if (canUseStone && stoneGatheringSpeedChartData.length === 0) {
       setStoneGatheringSpeedChartData([
         {
           level: 0,
@@ -788,7 +796,7 @@ function IslandSimulator() {
         },
       ]);
     }
-  }, []);
+  }, [canUseStone]);
 
   // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
   useEffect(() => {
@@ -870,7 +878,8 @@ function IslandSimulator() {
 
   // Update gathering speed chart data for all levels with Snow speed
   useEffect(() => {
-    if (levelsPassed > 0) {
+    // Only show Snow speed data while Stone mode is not unlocked
+    if (levelsPassed > 0 && !canUseStone) {
       setGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
@@ -904,11 +913,12 @@ function IslandSimulator() {
         ];
       });
     }
-  }, [currentGatheringSpeed, levelsPassed]);
+  }, [currentGatheringSpeed, levelsPassed, canUseStone]);
 
   // Update wood gathering speed chart data for all levels with Wood speed
   useEffect(() => {
-    if (levelsPassed > 0) {
+    // Only show Wood speed data after Wood mode is unlocked
+    if (levelsPassed > 0 && canUseWood) {
       setWoodGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
@@ -942,11 +952,12 @@ function IslandSimulator() {
         ];
       });
     }
-  }, [currentWoodGatheringSpeed, levelsPassed]);
+  }, [currentWoodGatheringSpeed, levelsPassed, canUseWood]);
 
   // Update stone gathering speed chart data for all levels with Stone speed
   useEffect(() => {
-    if (levelsPassed > 0) {
+    // Only show Stone speed data after Stone mode is unlocked
+    if (levelsPassed > 0 && canUseStone) {
       // Apply reset every 3 levels (at levels 3, 6, 9, etc.) only when in Stone mode
       if (currentMode === "Stone" && levelsPassed % 3 === 0) {
         setCurrentStoneGatheringSpeed1(0.2);
@@ -994,6 +1005,7 @@ function IslandSimulator() {
     currentStoneGatheringSpeed2,
     levelsPassed,
     currentMode,
+    canUseStone,
   ]);
 
   // Update economy chart data instantly when totalEarned or totalSpent changes
@@ -1812,16 +1824,16 @@ function IslandSimulator() {
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
                       stroke="#94a3b8"
-                      label={{
-                        value: "Level",
-                        position: "insideBottomRight",
-                        offset: -5,
-                      }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -1873,16 +1885,19 @@ function IslandSimulator() {
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={gatheringSpeedChartData}>
+                  <LineChart
+                    data={gatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
                       stroke="#94a3b8"
-                      label={{
-                        value: "Level",
-                        position: "insideBottomRight",
-                        offset: -5,
-                      }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -1943,16 +1958,19 @@ function IslandSimulator() {
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={woodGatheringSpeedChartData}>
+                  <LineChart
+                    data={woodGatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
                       stroke="#94a3b8"
-                      label={{
-                        value: "Level",
-                        position: "insideBottomRight",
-                        offset: -5,
-                      }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2013,16 +2031,19 @@ function IslandSimulator() {
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={stoneGatheringSpeedChartData}>
+                  <LineChart
+                    data={stoneGatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
                       stroke="#94a3b8"
-                      label={{
-                        value: "Level",
-                        position: "insideBottomRight",
-                        offset: -5,
-                      }}
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
                     />
                     <YAxis
                       stroke="#94a3b8"
