@@ -1646,7 +1646,7 @@ function IslandSimulator() {
             </div>
 
             {/* ── Earning Graph ── */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Орлого зарлагын граф
               </h2>
@@ -1707,7 +1707,7 @@ function IslandSimulator() {
             {/* ── Gathering Speed Graphs ── */}
 
             {/* Snow Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Цасны цуглуулах хурд
               </h2>
@@ -1777,7 +1777,7 @@ function IslandSimulator() {
             </div>
 
             {/* Wood Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Модны цуглуулах хурд
               </h2>
@@ -1847,7 +1847,7 @@ function IslandSimulator() {
             </div>
 
             {/* Stone Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Чулуу цуглуулах хурд
               </h2>
