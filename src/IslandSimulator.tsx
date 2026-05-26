@@ -703,6 +703,40 @@ function IslandSimulator() {
   const [moveSpeedChartData, setMoveSpeedChartData] = useState<
     Array<{ level: number; speed: number; maxSpeed: number; minSpeed: number }>
   >(() => getInitialState("moveSpeedChartData", []));
+  const [currentGatheringSpeed, setCurrentGatheringSpeed] = useState(() =>
+    getInitialState("currentGatheringSpeed", 7.5),
+  );
+  const [gatheringSpeedChartData, setGatheringSpeedChartData] = useState<
+    Array<{ level: number; speed: number; maxSpeed: number; minSpeed: number }>
+  >(() => getInitialState("gatheringSpeedChartData", []));
+  const [currentWoodGatheringSpeed, setCurrentWoodGatheringSpeed] = useState(
+    () => getInitialState("currentWoodGatheringSpeed", 5),
+  );
+  const [woodGatheringSpeedChartData, setWoodGatheringSpeedChartData] =
+    useState<
+      Array<{
+        level: number;
+        speed: number;
+        maxSpeed: number;
+        minSpeed: number;
+      }>
+    >(() => getInitialState("woodGatheringSpeedChartData", []));
+  const [currentStoneGatheringSpeed1, setCurrentStoneGatheringSpeed1] =
+    useState(() => getInitialState("currentStoneGatheringSpeed1", 0.2));
+  const [currentStoneGatheringSpeed2, setCurrentStoneGatheringSpeed2] =
+    useState(() => getInitialState("currentStoneGatheringSpeed2", 0.29));
+  const [stoneGatheringSpeedChartData, setStoneGatheringSpeedChartData] =
+    useState<
+      Array<{
+        level: number;
+        speed1: number;
+        speed2: number;
+        min1: number;
+        max1: number;
+        min2: number;
+        max2: number;
+      }>
+    >(() => getInitialState("stoneGatheringSpeedChartData", []));
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
@@ -745,6 +779,52 @@ function IslandSimulator() {
         return newSpeed;
       });
     } else if (levelsPassed > 0) {
+      // Snow gathering speed: apply decrease formula after every 3 levels
+      let snowSpeed = currentGatheringSpeed;
+      if (levelsPassed % 3 === 0) {
+        snowSpeed = (6.5 + currentGatheringSpeed) / 2;
+      }
+      setGatheringSpeedChartData((prev) => [
+        ...prev,
+        {
+          level: levelsPassed,
+          speed: snowSpeed,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        },
+      ]);
+
+      // Wood gathering speed: apply decrease formula after every 3 levels
+      let woodSpeed = currentWoodGatheringSpeed;
+      if (levelsPassed % 3 === 0) {
+        woodSpeed = (5 + currentWoodGatheringSpeed) / 2;
+      }
+      setWoodGatheringSpeedChartData((prev) => [
+        ...prev,
+        {
+          level: levelsPassed,
+          speed: woodSpeed,
+          maxSpeed: 20,
+          minSpeed: 5,
+        },
+      ]);
+
+      // Stone gathering speeds: no decrease formula, just clamp to minimums
+      let stone1 = currentStoneGatheringSpeed1;
+      let stone2 = currentStoneGatheringSpeed2;
+      setStoneGatheringSpeedChartData((prev) => [
+        ...prev,
+        {
+          level: levelsPassed,
+          speed1: stone1,
+          speed2: stone2,
+          min1: 0.05,
+          max1: 0.2,
+          min2: 0.29,
+          max2: 1,
+        },
+      ]);
+
       setMoveSpeedChartData((prev) => [
         ...prev,
         {
@@ -755,7 +835,14 @@ function IslandSimulator() {
         },
       ]);
     }
-  }, [levelsPassed, gameSettings]);
+  }, [
+    levelsPassed,
+    gameSettings,
+    currentGatheringSpeed,
+    currentWoodGatheringSpeed,
+    currentStoneGatheringSpeed1,
+    currentStoneGatheringSpeed2,
+  ]);
 
   // Update move speed chart data instantly when currentSpeed changes
   useEffect(() => {
@@ -777,6 +864,81 @@ function IslandSimulator() {
       });
     }
   }, [currentSpeed, levelsPassed, gameSettings]);
+
+  // Update gathering speed chart data instantly when currentGatheringSpeed changes
+  useEffect(() => {
+    if (levelsPassed > 0 && currentMode === "Snow") {
+      setGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        if (lastEntry && lastEntry.speed !== currentGatheringSpeed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: lastEntry.level,
+              speed: currentGatheringSpeed,
+              maxSpeed: 13,
+              minSpeed: 6.5,
+            },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [currentGatheringSpeed, levelsPassed, currentMode]);
+
+  // Update wood gathering speed chart data
+  useEffect(() => {
+    if (levelsPassed > 0 && currentMode === "Wood") {
+      setWoodGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        if (lastEntry && lastEntry.speed !== currentWoodGatheringSpeed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: lastEntry.level,
+              speed: currentWoodGatheringSpeed,
+              maxSpeed: 10,
+              minSpeed: 5,
+            },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [currentWoodGatheringSpeed, levelsPassed, currentMode]);
+
+  // Update stone gathering speed chart data
+  useEffect(() => {
+    if (levelsPassed > 0 && currentMode === "Stone") {
+      setStoneGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        if (
+          lastEntry &&
+          (lastEntry.speed1 !== currentStoneGatheringSpeed1 ||
+            lastEntry.speed2 !== currentStoneGatheringSpeed2)
+        ) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: lastEntry.level,
+              speed1: currentStoneGatheringSpeed1,
+              speed2: currentStoneGatheringSpeed2,
+              min1: 0.05,
+              max1: 0.2,
+              min2: 0.29,
+              max2: 1,
+            },
+          ];
+        }
+        return prev;
+      });
+    }
+  }, [
+    currentStoneGatheringSpeed1,
+    currentStoneGatheringSpeed2,
+    levelsPassed,
+    currentMode,
+  ]);
 
   // Update economy chart data instantly when totalEarned or totalSpent changes
   useEffect(() => {
@@ -814,6 +976,13 @@ function IslandSimulator() {
       chartData,
       currentSpeed,
       moveSpeedChartData,
+      currentGatheringSpeed,
+      gatheringSpeedChartData,
+      currentWoodGatheringSpeed,
+      woodGatheringSpeedChartData,
+      currentStoneGatheringSpeed1,
+      currentStoneGatheringSpeed2,
+      stoneGatheringSpeedChartData,
     };
     localStorage.setItem("cleansnowGameState", JSON.stringify(gameState));
   }, [
@@ -831,6 +1000,13 @@ function IslandSimulator() {
     chartData,
     currentSpeed,
     moveSpeedChartData,
+    currentGatheringSpeed,
+    gatheringSpeedChartData,
+    currentWoodGatheringSpeed,
+    woodGatheringSpeedChartData,
+    currentStoneGatheringSpeed1,
+    currentStoneGatheringSpeed2,
+    stoneGatheringSpeedChartData,
   ]);
 
   function getLevelProgressBonus(level: number): number {
@@ -913,6 +1089,22 @@ function IslandSimulator() {
     // Increase move speed when moveSpeed upgrade is purchased
     if (key === "moveSpeed") {
       setCurrentSpeed((prev) => Math.min(gameSettings.maxSpeed, prev + 1));
+    }
+
+    // Increase gathering speed when gatherSpeed upgrade is purchased
+    if (key === "gatherSpeed") {
+      setCurrentGatheringSpeed((prev) => Math.min(13, prev + 1));
+    }
+
+    // Increase wood gathering speed when woodGatherSpeed upgrade is purchased
+    if (key === "woodGatherSpeed") {
+      setCurrentWoodGatheringSpeed((prev) => Math.min(20, prev + 0.5));
+    }
+
+    // Stone gathering speeds
+    if (key === "stoneGatherSpeed") {
+      setCurrentStoneGatheringSpeed1((prev) => Math.max(0.05, prev - 0.004));
+      setCurrentStoneGatheringSpeed2((prev) => Math.min(1, prev + 0.04));
     }
   }
 
@@ -1008,6 +1200,13 @@ function IslandSimulator() {
     setChartData([]);
     setCurrentSpeed(4);
     setMoveSpeedChartData([]);
+    setCurrentGatheringSpeed(7.5);
+    setGatheringSpeedChartData([]);
+    setCurrentWoodGatheringSpeed(5);
+    setWoodGatheringSpeedChartData([]);
+    setCurrentStoneGatheringSpeed1(0.2);
+    setCurrentStoneGatheringSpeed2(0.29);
+    setStoneGatheringSpeedChartData([]);
   }
 
   function handleSettingsChange(newSettings: GameSettings) {
@@ -1028,6 +1227,13 @@ function IslandSimulator() {
     setChartData([]);
     setCurrentSpeed(4);
     setMoveSpeedChartData([]);
+    setCurrentGatheringSpeed(7.5);
+    setGatheringSpeedChartData([]);
+    setCurrentWoodGatheringSpeed(5);
+    setWoodGatheringSpeedChartData([]);
+    setCurrentStoneGatheringSpeed1(0.2);
+    setCurrentStoneGatheringSpeed2(0.29);
+    setStoneGatheringSpeedChartData([]);
   }
 
   return (
@@ -1112,333 +1318,335 @@ function IslandSimulator() {
       </div>
 
       <div className="mx-auto max-w-screen-2xl px-4 py-6">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* ── Gathering Scene ── */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Snowflake className="h-5 w-5 text-sky-400" />
-              Материал цуглуулах
-            </h2>
+        <div className="space-y-6">
+          {/* Top Row: Gathering + Building */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* ── Gathering Scene ── */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Snowflake className="h-5 w-5 text-sky-400" />
+                Материал цуглуулах
+              </h2>
 
-            {/* Mode Selector */}
-            <div className="mb-6 space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                Материал
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {(["Snow", "Wood", "Stone"] as Mode[]).map((mode) => {
-                  const isLocked =
-                    (mode === "Wood" && !canUseWood) ||
-                    (mode === "Stone" && !canUseStone);
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => !isLocked && setCurrentMode(mode)}
-                      disabled={isLocked}
-                      className={`relative rounded-lg px-3 py-2.5 text-sm font-bold transition-all duration-200 ${
-                        isLocked
-                          ? "bg-slate-800/30 text-slate-600 cursor-not-allowed opacity-50"
-                          : currentMode === mode
-                            ? "bg-sky-500/30 border border-sky-500/60 text-sky-200"
-                            : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:bg-slate-800/50"
-                      }`}
-                    >
-                      {mode}
-                      {isLocked && (
-                        <Lock className="absolute h-3 w-3 top-1 right-1" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {currentMode === "Wood" && !canUseWood && (
-                <p className="text-xs text-amber-400">
-                  Build Island 1's first 6 buildings to unlock Wood
+              {/* Mode Selector */}
+              <div className="mb-6 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                  Материал
                 </p>
-              )}
-              {currentMode === "Stone" && !canUseStone && (
-                <p className="text-xs text-amber-400">
-                  Build Island 2's first 6 buildings to unlock Stone
-                </p>
-              )}
-            </div>
-
-            {/* Clear level buttons */}
-            <div className="mb-6 space-y-3 p-4 rounded-xl border border-slate-700 bg-slate-800/30">
-              <div className="text-xs">
-                <p className="text-slate-500 mb-1">
-                  Level total:{" "}
-                  <span className="font-bold text-slate-300">
-                    {fmt(levelTotalSnow)}
-                  </span>{" "}
-                  {currentMode}
-                </p>
-                <p className="text-slate-500">
-                  Min to pass (72.5%):{" "}
-                  <span className="font-bold text-slate-300">
-                    {fmt(minRequiredSnow)}
-                  </span>
-                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["Snow", "Wood", "Stone"] as Mode[]).map((mode) => {
+                    const isLocked =
+                      (mode === "Wood" && !canUseWood) ||
+                      (mode === "Stone" && !canUseStone);
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => !isLocked && setCurrentMode(mode)}
+                        disabled={isLocked}
+                        className={`relative rounded-lg px-3 py-2.5 text-sm font-bold transition-all duration-200 ${
+                          isLocked
+                            ? "bg-slate-800/30 text-slate-600 cursor-not-allowed opacity-50"
+                            : currentMode === mode
+                              ? "bg-sky-500/30 border border-sky-500/60 text-sky-200"
+                              : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:bg-slate-800/50"
+                        }`}
+                      >
+                        {mode}
+                        {isLocked && (
+                          <Lock className="absolute h-3 w-3 top-1 right-1" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {currentMode === "Wood" && !canUseWood && (
+                  <p className="text-xs text-amber-400">
+                    Build Island 1's first 6 buildings to unlock Wood
+                  </p>
+                )}
+                {currentMode === "Stone" && !canUseStone && (
+                  <p className="text-xs text-amber-400">
+                    Build Island 2's first 6 buildings to unlock Stone
+                  </p>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={clearLevelPerfect}
-                className="w-full rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-emerald-500/30 active:scale-95"
-              >
-                Complete Level
-              </button>
+              {/* Clear level buttons */}
+              <div className="mb-6 space-y-3 p-4 rounded-xl border border-slate-700 bg-slate-800/30">
+                <div className="text-xs">
+                  <p className="text-slate-500 mb-1">
+                    Level total:{" "}
+                    <span className="font-bold text-slate-300">
+                      {fmt(levelTotalSnow)}
+                    </span>{" "}
+                    {currentMode}
+                  </p>
+                  <p className="text-slate-500">
+                    Min to pass (72.5%):{" "}
+                    <span className="font-bold text-slate-300">
+                      {fmt(minRequiredSnow)}
+                    </span>
+                  </p>
+                </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={cleanAmount}
-                  onChange={(e) => setCleanAmount(e.target.value)}
-                  placeholder={`Min: ${fmt(minRequiredSnow)}`}
-                  min={minRequiredSnow}
-                  max={levelTotalSnow}
-                  className="flex-1 rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-                />
                 <button
                   type="button"
-                  onClick={clearLevelCustom}
-                  disabled={
-                    !cleanAmount ||
-                    parseInt(cleanAmount, 10) < minRequiredSnow ||
-                    parseInt(cleanAmount, 10) > levelTotalSnow
-                  }
-                  className="rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 px-4 py-2 text-sm font-bold transition-all duration-200 hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  onClick={clearLevelPerfect}
+                  className="w-full rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-emerald-500/30 active:scale-95"
                 >
-                  Clean
+                  Complete Level
                 </button>
-              </div>
-            </div>
 
-            {/* Upgrades */}
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
-                Upgrades
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {(Object.keys(upgrades) as UpgradeKey[])
-                  .filter((key) => {
-                    // Show mode-specific upgrades
-                    if (currentMode === "Snow") {
-                      return [
-                        "gatherSpeed",
-                        "gatherSize",
-                        "capacity",
-                        "moveSpeed",
-                      ].includes(key);
-                    } else if (currentMode === "Wood") {
-                      return [
-                        "woodGatherSpeed",
-                        "woodGatherSize",
-                        "capacity",
-                        "moveSpeed",
-                      ].includes(key);
-                    } else if (currentMode === "Stone") {
-                      return [
-                        "stoneGatherSpeed",
-                        "stoneGatherSize",
-                        "capacity",
-                        "moveSpeed",
-                      ].includes(key);
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={cleanAmount}
+                    onChange={(e) => setCleanAmount(e.target.value)}
+                    placeholder={`Min: ${fmt(minRequiredSnow)}`}
+                    min={minRequiredSnow}
+                    max={levelTotalSnow}
+                    className="flex-1 rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearLevelCustom}
+                    disabled={
+                      !cleanAmount ||
+                      parseInt(cleanAmount, 10) < minRequiredSnow ||
+                      parseInt(cleanAmount, 10) > levelTotalSnow
                     }
-                    return false;
-                  })
-                  .sort((a, b) => {
-                    // Keep order for Snow mode
-                    if (currentMode === "Snow") {
-                      const snowOrder = [
-                        "gatherSpeed",
-                        "gatherSize",
-                        "capacity",
-                        "moveSpeed",
-                      ];
-                      return snowOrder.indexOf(a) - snowOrder.indexOf(b);
-                    }
-                    // For Wood, put mode-specific upgrades first, then capacity & moveSpeed
-                    if (currentMode === "Wood") {
-                      const order: Record<string, number> = {
-                        woodGatherSpeed: 0,
-                        woodGatherSize: 1,
-                        capacity: 2,
-                        moveSpeed: 3,
-                      };
-                      return (order[a] ?? 4) - (order[b] ?? 4);
-                    }
-                    // For Stone, put mode-specific upgrades first, then capacity & moveSpeed
-                    if (currentMode === "Stone") {
-                      const order: Record<string, number> = {
-                        stoneGatherSpeed: 0,
-                        stoneGatherSize: 1,
-                        capacity: 2,
-                        moveSpeed: 3,
-                      };
-                      return (order[a] ?? 4) - (order[b] ?? 4);
-                    }
-                    return 0;
-                  })
-                  .map((key) => {
-                    const level = upgrades[key];
-                    const meta = UPGRADE_META[key];
-                    const max = MAX_UPGRADE_LEVEL[key];
-                    const cost = getUpgradeCost(key);
-                    const canAfford = money >= cost && cost > 0;
-                    const isMaxed = max && level >= max;
-                    return (
-                      <div
-                        key={key}
-                        className="rounded-lg bg-slate-950/40 px-2 py-2 border border-slate-700/40 space-y-1.5"
-                      >
-                        <div className="flex items-center gap-1">
-                          <span className={`text-sm ${meta.color}`}>
-                            {meta.icon}
-                          </span>
-                          <span className="text-xs font-semibold text-slate-300 truncate">
-                            {meta.label}
-                          </span>
-                        </div>
-                        <div className="text-xs font-bold text-slate-100 px-0.5">
-                          {level}
-                          {max && (
-                            <span className="text-xs text-slate-600 ml-0.5">
-                              /{max}
+                    className="rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 px-4 py-2 text-sm font-bold transition-all duration-200 hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  >
+                    Clean
+                  </button>
+                </div>
+              </div>
+
+              {/* Upgrades */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+                  Upgrades
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(upgrades) as UpgradeKey[])
+                    .filter((key) => {
+                      // Show mode-specific upgrades
+                      if (currentMode === "Snow") {
+                        return [
+                          "gatherSpeed",
+                          "gatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
+                      } else if (currentMode === "Wood") {
+                        return [
+                          "woodGatherSpeed",
+                          "woodGatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
+                      } else if (currentMode === "Stone") {
+                        return [
+                          "stoneGatherSpeed",
+                          "stoneGatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
+                      }
+                      return false;
+                    })
+                    .sort((a, b) => {
+                      // Keep order for Snow mode
+                      if (currentMode === "Snow") {
+                        const snowOrder = [
+                          "gatherSpeed",
+                          "gatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ];
+                        return snowOrder.indexOf(a) - snowOrder.indexOf(b);
+                      }
+                      // For Wood, put mode-specific upgrades first, then capacity & moveSpeed
+                      if (currentMode === "Wood") {
+                        const order: Record<string, number> = {
+                          woodGatherSpeed: 0,
+                          woodGatherSize: 1,
+                          capacity: 2,
+                          moveSpeed: 3,
+                        };
+                        return (order[a] ?? 4) - (order[b] ?? 4);
+                      }
+                      // For Stone, put mode-specific upgrades first, then capacity & moveSpeed
+                      if (currentMode === "Stone") {
+                        const order: Record<string, number> = {
+                          stoneGatherSpeed: 0,
+                          stoneGatherSize: 1,
+                          capacity: 2,
+                          moveSpeed: 3,
+                        };
+                        return (order[a] ?? 4) - (order[b] ?? 4);
+                      }
+                      return 0;
+                    })
+                    .map((key) => {
+                      const level = upgrades[key];
+                      const meta = UPGRADE_META[key];
+                      const max = MAX_UPGRADE_LEVEL[key];
+                      const cost = getUpgradeCost(key);
+                      const canAfford = money >= cost && cost > 0;
+                      const isMaxed = max && level >= max;
+                      return (
+                        <div
+                          key={key}
+                          className="rounded-lg bg-slate-950/40 px-2 py-2 border border-slate-700/40 space-y-1.5"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm ${meta.color}`}>
+                              {meta.icon}
                             </span>
+                            <span className="text-xs font-semibold text-slate-300 truncate">
+                              {meta.label}
+                            </span>
+                          </div>
+                          <div className="text-xs font-bold text-slate-100 px-0.5">
+                            {level}
+                            {max && (
+                              <span className="text-xs text-slate-600 ml-0.5">
+                                /{max}
+                              </span>
+                            )}
+                          </div>
+                          {!isMaxed && (
+                            <button
+                              type="button"
+                              onClick={() => buyUpgrade(key)}
+                              disabled={!canAfford}
+                              className={`w-full rounded-md py-1 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                                canAfford
+                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                                  : "bg-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
+                              }`}
+                            >
+                              ${fmt(cost)}
+                            </button>
+                          )}
+                          {isMaxed && (
+                            <div className="w-full rounded-md py-1 px-2 text-xs font-bold text-center bg-slate-800/30 text-slate-500">
+                              Max
+                            </div>
                           )}
                         </div>
-                        {!isMaxed && (
-                          <button
-                            type="button"
-                            onClick={() => buyUpgrade(key)}
-                            disabled={!canAfford}
-                            className={`w-full rounded-md py-1 text-xs font-bold transition-all duration-200 active:scale-95 ${
-                              canAfford
-                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
-                                : "bg-slate-800/50 text-slate-600 cursor-not-allowed opacity-50"
-                            }`}
-                          >
-                            ${fmt(cost)}
-                          </button>
-                        )}
-                        {isMaxed && (
-                          <div className="w-full rounded-md py-1 px-2 text-xs font-bold text-center bg-slate-800/30 text-slate-500">
-                            Max
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
-            </div>
 
-            {/* Stats */}
-            <div className="mt-6 space-y-2 p-4 rounded-xl border border-slate-700 bg-slate-800/20">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Ice:</span>
-                <span className="font-bold text-sky-400">{fmt(ice)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Wood:</span>
-                <span className="font-bold text-amber-400">{fmt(wood)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Stone:</span>
-                <span className="font-bold text-gray-400">{fmt(stone)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Cash:</span>
-                <span className="font-bold text-violet-400">${fmt(money)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Island Scene ── */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-emerald-400" />
-              Барилга барих
-            </h2>
-
-            <div className="space-y-6">
-              {/* Island 1 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-sky-400">Арал 1</h3>
-                  <span className="text-xs font-bold bg-sky-500/15 text-sky-300 px-2.5 py-1 rounded-lg">
-                    {island1Built}/14
+              {/* Stats */}
+              <div className="mt-6 space-y-2 p-4 rounded-xl border border-slate-700 bg-slate-800/20">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Ice:</span>
+                  <span className="font-bold text-sky-400">{fmt(ice)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Wood:</span>
+                  <span className="font-bold text-amber-400">{fmt(wood)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Stone:</span>
+                  <span className="font-bold text-gray-400">{fmt(stone)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Cash:</span>
+                  <span className="font-bold text-violet-400">
+                    ${fmt(money)}
                   </span>
                 </div>
-                <div className="grid gap-2 grid-cols-4">
-                  {island1Buildings.map((building) => {
-                    const req = building.requiredMaterials;
-                    const hasEnoughMaterials =
-                      (!req.ice || ice >= req.ice) &&
-                      (!req.wood || wood >= req.wood) &&
-                      (!req.stone || stone >= req.stone);
-                    return (
-                      <BuildingCard
-                        key={building.id}
-                        building={building}
-                        isNextToBuild={building === nextBuilding}
-                        canBuild={
-                          !building.isBuilt &&
-                          hasEnoughMaterials &&
-                          building === nextBuilding
-                        }
-                        onBuild={() => buildBuilding(building.id)}
-                        ice={ice}
-                        wood={wood}
-                        stone={stone}
-                      />
-                    );
-                  })}
-                </div>
               </div>
+            </div>
 
-              {/* Island 2 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-amber-400">Арал 2</h3>
-                  <span className="text-xs font-bold bg-amber-500/15 text-amber-300 px-2.5 py-1 rounded-lg">
-                    {island2Built}/14
-                  </span>
+            {/* ── Island Scene ── */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[calc(100vh-100px)] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-emerald-400" />
+                Барилга барих
+              </h2>
+
+              <div className="space-y-6">
+                {/* Island 1 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-sky-400">Арал 1</h3>
+                    <span className="text-xs font-bold bg-sky-500/15 text-sky-300 px-2.5 py-1 rounded-lg">
+                      {island1Built}/14
+                    </span>
+                  </div>
+                  <div className="grid gap-2 grid-cols-4">
+                    {island1Buildings.map((building) => {
+                      const req = building.requiredMaterials;
+                      const hasEnoughMaterials =
+                        (!req.ice || ice >= req.ice) &&
+                        (!req.wood || wood >= req.wood) &&
+                        (!req.stone || stone >= req.stone);
+                      return (
+                        <BuildingCard
+                          key={building.id}
+                          building={building}
+                          isNextToBuild={building === nextBuilding}
+                          canBuild={
+                            !building.isBuilt &&
+                            hasEnoughMaterials &&
+                            building === nextBuilding
+                          }
+                          onBuild={() => buildBuilding(building.id)}
+                          ice={ice}
+                          wood={wood}
+                          stone={stone}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid gap-2 grid-cols-4">
-                  {island2Buildings.map((building) => {
-                    const req = building.requiredMaterials;
-                    const hasEnoughMaterials =
-                      (!req.ice || ice >= req.ice) &&
-                      (!req.wood || wood >= req.wood) &&
-                      (!req.stone || stone >= req.stone);
-                    return (
-                      <BuildingCard
-                        key={building.id}
-                        building={building}
-                        isNextToBuild={building === nextBuilding}
-                        canBuild={
-                          !building.isBuilt &&
-                          hasEnoughMaterials &&
-                          building === nextBuilding
-                        }
-                        onBuild={() => buildBuilding(building.id)}
-                        ice={ice}
-                        wood={wood}
-                        stone={stone}
-                      />
-                    );
-                  })}
+
+                {/* Island 2 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-amber-400">Арал 2</h3>
+                    <span className="text-xs font-bold bg-amber-500/15 text-amber-300 px-2.5 py-1 rounded-lg">
+                      {island2Built}/14
+                    </span>
+                  </div>
+                  <div className="grid gap-2 grid-cols-4">
+                    {island2Buildings.map((building) => {
+                      const req = building.requiredMaterials;
+                      const hasEnoughMaterials =
+                        (!req.ice || ice >= req.ice) &&
+                        (!req.wood || wood >= req.wood) &&
+                        (!req.stone || stone >= req.stone);
+                      return (
+                        <BuildingCard
+                          key={building.id}
+                          building={building}
+                          isNextToBuild={building === nextBuilding}
+                          canBuild={
+                            !building.isBuilt &&
+                            hasEnoughMaterials &&
+                            building === nextBuilding
+                          }
+                          onBuild={() => buildBuilding(building.id)}
+                          ice={ice}
+                          wood={wood}
+                          stone={stone}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ── Graphs ── */}
-          <div className="flex flex-col gap-6 h-[calc(100vh-100px)]">
-            {/* Stats Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm flex-1 flex flex-col min-h-0">
+            {/* ── Earning Graph ── */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Орлого зарлагын граф
               </h2>
@@ -1496,14 +1704,16 @@ function IslandSimulator() {
               </div>
             </div>
 
-            {/* Move Speed Degradation Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm flex-1 flex flex-col min-h-0">
+            {/* ── Gathering Speed Graphs ── */}
+
+            {/* Snow Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
-                Машины хурд граф
+                Цасны цуглуулах хурд
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={moveSpeedChartData}>
+                  <LineChart data={gatheringSpeedChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
@@ -1516,10 +1726,7 @@ function IslandSimulator() {
                     />
                     <YAxis
                       stroke="#94a3b8"
-                      domain={[
-                        Math.floor(gameSettings.minSpeed),
-                        gameSettings.maxSpeed,
-                      ]}
+                      domain={[0, 15]}
                       label={{
                         value: "Speed",
                         angle: -90,
@@ -1542,7 +1749,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="maxSpeed"
                       stroke="#ef4444"
-                      name={`Max Speed (${gameSettings.maxSpeed})`}
+                      name="Max Speed (13)"
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
@@ -1550,16 +1757,182 @@ function IslandSimulator() {
                     <Line
                       type="monotone"
                       dataKey="speed"
-                      stroke="#06b6d4"
+                      stroke="#3b82f6"
                       name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#3b82f6", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#facc15"
+                      name="Min Speed (6.5)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Wood Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Модны цуглуулах хурд
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={woodGatheringSpeedChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      label={{
+                        value: "Level",
+                        position: "insideBottomRight",
+                        offset: -5,
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[0, 25]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(2) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="maxSpeed"
+                      stroke="#ef4444"
+                      name="Max Speed (20)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed"
+                      stroke="#3b82f6"
+                      name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#3b82f6", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#facc15"
+                      name="Min Speed (5)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Stone Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[300px] flex flex-col">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Чулуу цуглуулах хурд
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stoneGatheringSpeedChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      label={{
+                        value: "Level",
+                        position: "insideBottomRight",
+                        offset: -5,
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[0, 1.2]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(3) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="max1"
+                      stroke="#ef4444"
+                      name="Max1 (0.2)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed1"
+                      stroke="#06b6d4"
+                      name="Speed1"
                       strokeWidth={2}
                       dot={{ fill: "#06b6d4", r: 3 }}
                     />
                     <Line
                       type="monotone"
-                      dataKey="minSpeed"
-                      stroke="#f59e0b"
-                      name={`Min Speed (${gameSettings.minSpeed.toFixed(1)})`}
+                      dataKey="min1"
+                      stroke="#facc15"
+                      name="Min1 (0.05)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="max2"
+                      stroke="#8b5cf6"
+                      name="Max2 (1)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed2"
+                      stroke="#10b981"
+                      name="Speed2"
+                      strokeWidth={2}
+                      dot={{ fill: "#10b981", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="min2"
+                      stroke="#f97316"
+                      name="Min2 (0.29)"
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
