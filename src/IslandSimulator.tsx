@@ -753,10 +753,19 @@ function IslandSimulator() {
 
   // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
   useEffect(() => {
-    setChartData((prev) => [
-      ...prev,
-      { level: levelsPassed, earned: totalEarned, spent: totalSpent },
-    ]);
+    setChartData((prev) => {
+      const lastEntry = prev[prev.length - 1];
+      const newEntry = {
+        level: levelsPassed,
+        earned: totalEarned,
+        spent: totalSpent,
+      };
+
+      if (lastEntry && lastEntry.level === levelsPassed) {
+        return [...prev.slice(0, -1), newEntry];
+      }
+      return [...prev, newEntry];
+    });
 
     // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
     if (levelsPassed > 0 && levelsPassed % 3 === 0) {
@@ -779,52 +788,7 @@ function IslandSimulator() {
         return newSpeed;
       });
     } else if (levelsPassed > 0) {
-      // Snow gathering speed: apply decrease formula after every 3 levels
-      let snowSpeed = currentGatheringSpeed;
-      if (levelsPassed % 3 === 0) {
-        snowSpeed = (6.5 + currentGatheringSpeed) / 2;
-      }
-      setGatheringSpeedChartData((prev) => [
-        ...prev,
-        {
-          level: levelsPassed,
-          speed: snowSpeed,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        },
-      ]);
-
-      // Wood gathering speed: apply decrease formula after every 3 levels
-      let woodSpeed = currentWoodGatheringSpeed;
-      if (levelsPassed % 3 === 0) {
-        woodSpeed = (5 + currentWoodGatheringSpeed) / 2;
-      }
-      setWoodGatheringSpeedChartData((prev) => [
-        ...prev,
-        {
-          level: levelsPassed,
-          speed: woodSpeed,
-          maxSpeed: 20,
-          minSpeed: 5,
-        },
-      ]);
-
-      // Stone gathering speeds: no decrease formula, just clamp to minimums
-      let stone1 = currentStoneGatheringSpeed1;
-      let stone2 = currentStoneGatheringSpeed2;
-      setStoneGatheringSpeedChartData((prev) => [
-        ...prev,
-        {
-          level: levelsPassed,
-          speed1: stone1,
-          speed2: stone2,
-          min1: 0.05,
-          max1: 0.2,
-          min2: 0.29,
-          max2: 1,
-        },
-      ]);
-
+      // Just add move speed chart entry (gathering speeds handled by their own effects)
       setMoveSpeedChartData((prev) => [
         ...prev,
         {
@@ -865,62 +829,96 @@ function IslandSimulator() {
     }
   }, [currentSpeed, levelsPassed, gameSettings]);
 
-  // Update gathering speed chart data instantly when currentGatheringSpeed changes
+  // Update gathering speed chart data: add entry when level changes, update when speed changes
   useEffect(() => {
     if (levelsPassed > 0 && currentMode === "Snow") {
       setGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
-        if (lastEntry && lastEntry.speed !== currentGatheringSpeed) {
+
+        // Apply decrease formula every 3 levels
+        let displaySpeed = currentGatheringSpeed;
+        if (levelsPassed > 0 && levelsPassed % 3 === 0) {
+          displaySpeed = (6.5 + currentGatheringSpeed) / 2;
+        }
+
+        // If we have an entry for this level, update it
+        if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
             {
-              level: lastEntry.level,
-              speed: currentGatheringSpeed,
+              level: levelsPassed,
+              speed: displaySpeed,
               maxSpeed: 13,
               minSpeed: 6.5,
             },
           ];
         }
-        return prev;
+
+        // If no entry for this level, add a new one
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: displaySpeed,
+            maxSpeed: 13,
+            minSpeed: 6.5,
+          },
+        ];
       });
     }
   }, [currentGatheringSpeed, levelsPassed, currentMode]);
 
-  // Update wood gathering speed chart data
+  // Update wood gathering speed chart data: add entry when level changes, update when speed changes
   useEffect(() => {
     if (levelsPassed > 0 && currentMode === "Wood") {
       setWoodGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
-        if (lastEntry && lastEntry.speed !== currentWoodGatheringSpeed) {
+
+        // Apply decrease formula every 3 levels
+        let displaySpeed = currentWoodGatheringSpeed;
+        if (levelsPassed > 0 && levelsPassed % 3 === 0) {
+          displaySpeed = (5 + currentWoodGatheringSpeed) / 2;
+        }
+
+        // If we have an entry for this level, update it
+        if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
             {
-              level: lastEntry.level,
-              speed: currentWoodGatheringSpeed,
-              maxSpeed: 10,
+              level: levelsPassed,
+              speed: displaySpeed,
+              maxSpeed: 20,
               minSpeed: 5,
             },
           ];
         }
-        return prev;
+
+        // If no entry for this level, add a new one
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: displaySpeed,
+            maxSpeed: 20,
+            minSpeed: 5,
+          },
+        ];
       });
     }
   }, [currentWoodGatheringSpeed, levelsPassed, currentMode]);
 
-  // Update stone gathering speed chart data
+  // Update stone gathering speed chart data: add entry when level changes, update when speeds change
   useEffect(() => {
     if (levelsPassed > 0 && currentMode === "Stone") {
       setStoneGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
-        if (
-          lastEntry &&
-          (lastEntry.speed1 !== currentStoneGatheringSpeed1 ||
-            lastEntry.speed2 !== currentStoneGatheringSpeed2)
-        ) {
+
+        // If we have an entry for this level, update it
+        if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
             {
-              level: lastEntry.level,
+              level: levelsPassed,
               speed1: currentStoneGatheringSpeed1,
               speed2: currentStoneGatheringSpeed2,
               min1: 0.05,
@@ -930,7 +928,20 @@ function IslandSimulator() {
             },
           ];
         }
-        return prev;
+
+        // If no entry for this level, add a new one
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed1: currentStoneGatheringSpeed1,
+            speed2: currentStoneGatheringSpeed2,
+            min1: 0.05,
+            max1: 0.2,
+            min2: 0.29,
+            max2: 1,
+          },
+        ];
       });
     }
   }, [
