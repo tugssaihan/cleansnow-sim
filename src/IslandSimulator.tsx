@@ -13,6 +13,8 @@ import {
   RotateCcw,
   Settings,
   X,
+  Download,
+  Upload,
 } from "lucide-react";
 import {
   LineChart,
@@ -751,6 +753,43 @@ function IslandSimulator() {
   const levelTotalSnow = getMaterialsPerTick("Snow", snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
 
+  // Initialize gathering speed charts with level 0 starting values
+  useEffect(() => {
+    if (gatheringSpeedChartData.length === 0) {
+      setGatheringSpeedChartData([
+        {
+          level: 0,
+          speed: 7.5,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        },
+      ]);
+    }
+    if (woodGatheringSpeedChartData.length === 0) {
+      setWoodGatheringSpeedChartData([
+        {
+          level: 0,
+          speed: 5,
+          maxSpeed: 20,
+          minSpeed: 5,
+        },
+      ]);
+    }
+    if (stoneGatheringSpeedChartData.length === 0) {
+      setStoneGatheringSpeedChartData([
+        {
+          level: 0,
+          speed1: 0.2,
+          speed2: 0.29,
+          min1: 0.05,
+          max1: 0.2,
+          min2: 0.29,
+          max2: 1,
+        },
+      ]);
+    }
+  }, []);
+
   // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
   useEffect(() => {
     setChartData((prev) => {
@@ -829,19 +868,19 @@ function IslandSimulator() {
     }
   }, [currentSpeed, levelsPassed, gameSettings]);
 
-  // Update gathering speed chart data: add entry when level changes, update when speed changes
+  // Update gathering speed chart data for all levels with Snow speed
   useEffect(() => {
-    if (levelsPassed > 0 && currentMode === "Snow") {
+    if (levelsPassed > 0) {
       setGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
         // Apply decrease formula every 3 levels
         let displaySpeed = currentGatheringSpeed;
-        if (levelsPassed > 0 && levelsPassed % 3 === 0) {
+        if (levelsPassed % 3 === 0) {
           displaySpeed = (6.5 + currentGatheringSpeed) / 2;
         }
 
-        // If we have an entry for this level, update it
+        // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
@@ -854,7 +893,6 @@ function IslandSimulator() {
           ];
         }
 
-        // If no entry for this level, add a new one
         return [
           ...prev,
           {
@@ -866,21 +904,21 @@ function IslandSimulator() {
         ];
       });
     }
-  }, [currentGatheringSpeed, levelsPassed, currentMode]);
+  }, [currentGatheringSpeed, levelsPassed]);
 
-  // Update wood gathering speed chart data: add entry when level changes, update when speed changes
+  // Update wood gathering speed chart data for all levels with Wood speed
   useEffect(() => {
-    if (levelsPassed > 0 && currentMode === "Wood") {
+    if (levelsPassed > 0) {
       setWoodGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
         // Apply decrease formula every 3 levels
         let displaySpeed = currentWoodGatheringSpeed;
-        if (levelsPassed > 0 && levelsPassed % 3 === 0) {
+        if (levelsPassed % 3 === 0) {
           displaySpeed = (5 + currentWoodGatheringSpeed) / 2;
         }
 
-        // If we have an entry for this level, update it
+        // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
@@ -893,7 +931,6 @@ function IslandSimulator() {
           ];
         }
 
-        // If no entry for this level, add a new one
         return [
           ...prev,
           {
@@ -905,22 +942,31 @@ function IslandSimulator() {
         ];
       });
     }
-  }, [currentWoodGatheringSpeed, levelsPassed, currentMode]);
+  }, [currentWoodGatheringSpeed, levelsPassed]);
 
-  // Update stone gathering speed chart data: add entry when level changes, update when speeds change
+  // Update stone gathering speed chart data for all levels with Stone speed
   useEffect(() => {
-    if (levelsPassed > 0 && currentMode === "Stone") {
+    if (levelsPassed > 0) {
+      // Apply reset every 3 levels (at levels 3, 6, 9, etc.) only when in Stone mode
+      if (currentMode === "Stone" && levelsPassed % 3 === 0) {
+        setCurrentStoneGatheringSpeed1(0.2);
+        setCurrentStoneGatheringSpeed2(0.29);
+      }
+
       setStoneGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
-        // If we have an entry for this level, update it
+        let displaySpeed1 = currentStoneGatheringSpeed1;
+        let displaySpeed2 = currentStoneGatheringSpeed2;
+
+        // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
           return [
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
-              speed1: currentStoneGatheringSpeed1,
-              speed2: currentStoneGatheringSpeed2,
+              speed1: displaySpeed1,
+              speed2: displaySpeed2,
               min1: 0.05,
               max1: 0.2,
               min2: 0.29,
@@ -929,13 +975,12 @@ function IslandSimulator() {
           ];
         }
 
-        // If no entry for this level, add a new one
         return [
           ...prev,
           {
             level: levelsPassed,
-            speed1: currentStoneGatheringSpeed1,
-            speed2: currentStoneGatheringSpeed2,
+            speed1: displaySpeed1,
+            speed2: displaySpeed2,
             min1: 0.05,
             max1: 0.2,
             min2: 0.29,
@@ -1220,6 +1265,88 @@ function IslandSimulator() {
     setStoneGatheringSpeedChartData([]);
   }
 
+  function saveGame() {
+    const gameState = {
+      money,
+      ice,
+      wood,
+      stone,
+      currentMode,
+      snowLevel,
+      levelsPassed,
+      totalSpent,
+      totalEarned,
+      upgrades,
+      buildings,
+      chartData,
+      currentSpeed,
+      moveSpeedChartData,
+      currentGatheringSpeed,
+      gatheringSpeedChartData,
+      currentWoodGatheringSpeed,
+      woodGatheringSpeedChartData,
+      currentStoneGatheringSpeed1,
+      currentStoneGatheringSpeed2,
+      stoneGatheringSpeedChartData,
+      gameSettings,
+    };
+
+    const dataStr = JSON.stringify(gameState, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cleansnow-save-${new Date().toISOString().split("T")[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadGame(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const gameState = JSON.parse(e.target?.result as string);
+        setMoney(gameState.money ?? 0);
+        setIce(gameState.ice ?? 0);
+        setWood(gameState.wood ?? 0);
+        setStone(gameState.stone ?? 0);
+        setCurrentMode(gameState.currentMode ?? "Snow");
+        setSnowLevel(gameState.snowLevel ?? 1);
+        setLevelsPassed(gameState.levelsPassed ?? 0);
+        setTotalSpent(gameState.totalSpent ?? 0);
+        setTotalEarned(gameState.totalEarned ?? 0);
+        setUpgrades(gameState.upgrades ?? DEFAULT_UPGRADES);
+        setBuildings(gameState.buildings ?? generateBuildings());
+        setChartData(gameState.chartData ?? []);
+        setCurrentSpeed(gameState.currentSpeed ?? 4);
+        setMoveSpeedChartData(gameState.moveSpeedChartData ?? []);
+        setCurrentGatheringSpeed(gameState.currentGatheringSpeed ?? 7.5);
+        setGatheringSpeedChartData(gameState.gatheringSpeedChartData ?? []);
+        setCurrentWoodGatheringSpeed(gameState.currentWoodGatheringSpeed ?? 5);
+        setWoodGatheringSpeedChartData(
+          gameState.woodGatheringSpeedChartData ?? [],
+        );
+        setCurrentStoneGatheringSpeed1(
+          gameState.currentStoneGatheringSpeed1 ?? 0.2,
+        );
+        setCurrentStoneGatheringSpeed2(
+          gameState.currentStoneGatheringSpeed2 ?? 0.29,
+        );
+        setStoneGatheringSpeedChartData(
+          gameState.stoneGatheringSpeedChartData ?? [],
+        );
+        if (gameState.gameSettings) {
+          setGameSettings(gameState.gameSettings);
+        }
+        alert("Game loaded successfully!");
+      } catch (error) {
+        console.error("Failed to load game:", error);
+        alert("Failed to load game file. Make sure it's a valid save file.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function handleSettingsChange(newSettings: GameSettings) {
     setGameSettings(newSettings);
     // Reset the game when settings change
@@ -1325,6 +1452,28 @@ function IslandSimulator() {
             <RotateCcw className="h-4 w-4" />
             Дахиж эхлэх
           </button>
+          <button
+            type="button"
+            onClick={saveGame}
+            className="flex items-center gap-2 rounded-lg bg-green-500/20 text-green-300 border border-green-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-green-500/30 active:scale-95"
+          >
+            <Download className="h-4 w-4" />
+            Save Game
+          </button>
+          <label className="flex items-center gap-2 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-blue-500/30 active:scale-95 cursor-pointer">
+            <Upload className="h-4 w-4" />
+            Load Game
+            <input
+              type="file"
+              accept=".json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) loadGame(file);
+                e.target.value = "";
+              }}
+              className="hidden"
+            />
+          </label>
         </div>
       </div>
 
