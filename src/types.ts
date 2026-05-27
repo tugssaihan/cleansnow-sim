@@ -9,6 +9,12 @@ export interface UpgradeState {
   woodGatherSize: number;
   stoneGatherSpeed: number;
   stoneGatherSize: number;
+  ironGatherSpeed: number;
+  ironGatherSize: number;
+  mudGatherSpeed: number;
+  mudGatherSize: number;
+  sandGatherSpeed: number;
+  sandGatherSize: number;
 }
 
 export interface MaterialRequirement {

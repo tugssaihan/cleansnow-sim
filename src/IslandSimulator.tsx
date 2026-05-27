@@ -38,6 +38,12 @@ const DEFAULT_UPGRADES: UpgradeState = {
   woodGatherSize: 1,
   stoneGatherSpeed: 1,
   stoneGatherSize: 1,
+  ironGatherSpeed: 1,
+  ironGatherSize: 1,
+  mudGatherSpeed: 1,
+  mudGatherSize: 1,
+  sandGatherSpeed: 1,
+  sandGatherSize: 1,
 };
 
 const MAX_UPGRADE_LEVEL: Record<UpgradeKey, number | null> = {
@@ -49,6 +55,12 @@ const MAX_UPGRADE_LEVEL: Record<UpgradeKey, number | null> = {
   woodGatherSize: 10,
   stoneGatherSpeed: null,
   stoneGatherSize: 10,
+  ironGatherSpeed: null,
+  ironGatherSize: null,
+  mudGatherSpeed: null,
+  mudGatherSize: null,
+  sandGatherSpeed: null,
+  sandGatherSize: null,
 };
 
 const UPGRADE_META: Record<
@@ -94,6 +106,36 @@ const UPGRADE_META: Record<
     label: "Stone Size",
     icon: <Package className="h-4 w-4" />,
     color: "text-gray-400",
+  },
+  ironGatherSpeed: {
+    label: "Iron Speed",
+    icon: <Zap className="h-4 w-4" />,
+    color: "text-orange-400",
+  },
+  ironGatherSize: {
+    label: "Iron Size",
+    icon: <Package className="h-4 w-4" />,
+    color: "text-orange-300",
+  },
+  mudGatherSpeed: {
+    label: "Mud Speed",
+    icon: <Zap className="h-4 w-4" />,
+    color: "text-yellow-700",
+  },
+  mudGatherSize: {
+    label: "Mud Size",
+    icon: <Package className="h-4 w-4" />,
+    color: "text-yellow-600",
+  },
+  sandGatherSpeed: {
+    label: "Sand Speed",
+    icon: <Zap className="h-4 w-4" />,
+    color: "text-yellow-400",
+  },
+  sandGatherSize: {
+    label: "Sand Size",
+    icon: <Package className="h-4 w-4" />,
+    color: "text-yellow-300",
   },
 };
 
@@ -1204,6 +1246,21 @@ function IslandSimulator() {
       );
     }
 
+    // Iron upgrades: base 600, +160 per level
+    if (key === "ironGatherSpeed" || key === "ironGatherSize") {
+      return 600 + (currentLevel - 1) * 160;
+    }
+
+    // Mud upgrades: base 800, +190 per level
+    if (key === "mudGatherSpeed" || key === "mudGatherSize") {
+      return 800 + (currentLevel - 1) * 190;
+    }
+
+    // Sand upgrades: base 1000, +220 per level
+    if (key === "sandGatherSpeed" || key === "sandGatherSize") {
+      return 1000 + (currentLevel - 1) * 220;
+    }
+
     return 0;
   }
 
@@ -1759,6 +1816,27 @@ function IslandSimulator() {
                           "capacity",
                           "moveSpeed",
                         ].includes(key);
+                      } else if (currentMode === "Iron") {
+                        return [
+                          "ironGatherSpeed",
+                          "ironGatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
+                      } else if (currentMode === "Mud") {
+                        return [
+                          "mudGatherSpeed",
+                          "mudGatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
+                      } else if (currentMode === "Sand") {
+                        return [
+                          "sandGatherSpeed",
+                          "sandGatherSize",
+                          "capacity",
+                          "moveSpeed",
+                        ].includes(key);
                       }
                       return false;
                     })
@@ -1788,6 +1866,36 @@ function IslandSimulator() {
                         const order: Record<string, number> = {
                           stoneGatherSpeed: 0,
                           stoneGatherSize: 1,
+                          capacity: 2,
+                          moveSpeed: 3,
+                        };
+                        return (order[a] ?? 4) - (order[b] ?? 4);
+                      }
+                      // For Iron, put mode-specific upgrades first, then capacity & moveSpeed
+                      if (currentMode === "Iron") {
+                        const order: Record<string, number> = {
+                          ironGatherSpeed: 0,
+                          ironGatherSize: 1,
+                          capacity: 2,
+                          moveSpeed: 3,
+                        };
+                        return (order[a] ?? 4) - (order[b] ?? 4);
+                      }
+                      // For Mud, put mode-specific upgrades first, then capacity & moveSpeed
+                      if (currentMode === "Mud") {
+                        const order: Record<string, number> = {
+                          mudGatherSpeed: 0,
+                          mudGatherSize: 1,
+                          capacity: 2,
+                          moveSpeed: 3,
+                        };
+                        return (order[a] ?? 4) - (order[b] ?? 4);
+                      }
+                      // For Sand, put mode-specific upgrades first, then capacity & moveSpeed
+                      if (currentMode === "Sand") {
+                        const order: Record<string, number> = {
+                          sandGatherSpeed: 0,
+                          sandGatherSize: 1,
                           capacity: 2,
                           moveSpeed: 3,
                         };
