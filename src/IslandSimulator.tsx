@@ -163,9 +163,9 @@ function getMaterialsPerTick(mode: Mode, snowLevel: number): number {
     case "Iron":
       return 250;
     case "Mud":
-      return 700;
+      return 250;
     case "Sand":
-      return 800;
+      return 250;
     default:
       return 0;
   }
@@ -830,7 +830,7 @@ function IslandSimulator() {
       }>
     >(() => getInitialState("stoneGatheringSpeedChartData", []));
   const [currentIronGatheringSpeed, setCurrentIronGatheringSpeed] = useState(
-    () => getInitialState("currentIronGatheringSpeed", 5),
+    () => getInitialState("currentIronGatheringSpeed", 12.5),
   );
   const [ironGatheringSpeedChartData, setIronGatheringSpeedChartData] =
     useState<
@@ -933,9 +933,9 @@ function IslandSimulator() {
       setIronGatheringSpeedChartData([
         {
           level: levelsPassed,
-          speed: 5,
-          maxSpeed: 20,
-          minSpeed: 5,
+          speed: 12.5,
+          maxSpeed: 13,
+          minSpeed: 6.5,
         },
       ]);
     }
@@ -1161,7 +1161,7 @@ function IslandSimulator() {
         // Apply decrease formula every 3 levels
         let displaySpeed = currentIronGatheringSpeed;
         if (levelsPassed % 3 === 0) {
-          displaySpeed = (5 + currentIronGatheringSpeed) / 2;
+          displaySpeed = (6.5 + currentIronGatheringSpeed) / 2;
         }
 
         // If we have an entry for this level, update it; otherwise add new one
@@ -1171,8 +1171,8 @@ function IslandSimulator() {
             {
               level: levelsPassed,
               speed: displaySpeed,
-              maxSpeed: 20,
-              minSpeed: 5,
+              maxSpeed: 13,
+              minSpeed: 6.5,
             },
           ];
         }
@@ -1182,8 +1182,8 @@ function IslandSimulator() {
           {
             level: levelsPassed,
             speed: displaySpeed,
-            maxSpeed: 20,
-            minSpeed: 5,
+            maxSpeed: 13,
+            minSpeed: 6.5,
           },
         ];
       });
@@ -1486,7 +1486,7 @@ function IslandSimulator() {
 
     // Increase iron gathering speed when ironGatherSpeed upgrade is purchased
     if (key === "ironGatherSpeed") {
-      setCurrentIronGatheringSpeed((prev) => Math.min(20, prev + 0.5));
+      setCurrentIronGatheringSpeed((prev) => Math.min(13, prev + 1));
     }
 
     // Increase mud gathering speed when mudGatherSpeed upgrade is purchased
@@ -1623,7 +1623,7 @@ function IslandSimulator() {
     setCurrentStoneGatheringSpeed1(0.2);
     setCurrentStoneGatheringSpeed2(0.29);
     setStoneGatheringSpeedChartData([]);
-    setCurrentIronGatheringSpeed(5);
+    setCurrentIronGatheringSpeed(12.5);
     setIronGatheringSpeedChartData([]);
     setCurrentMudGatheringSpeed(10.2);
     setMudGatheringSpeedChartData([]);
@@ -1707,7 +1707,9 @@ function IslandSimulator() {
         setStoneGatheringSpeedChartData(
           gameState.stoneGatheringSpeedChartData ?? [],
         );
-        setCurrentIronGatheringSpeed(gameState.currentIronGatheringSpeed ?? 5);
+        setCurrentIronGatheringSpeed(
+          gameState.currentIronGatheringSpeed ?? 12.5,
+        );
         setIronGatheringSpeedChartData(
           gameState.ironGatheringSpeedChartData ?? [],
         );
@@ -1761,7 +1763,7 @@ function IslandSimulator() {
     setCurrentStoneGatheringSpeed1(0.2);
     setCurrentStoneGatheringSpeed2(0.29);
     setStoneGatheringSpeedChartData([]);
-    setCurrentIronGatheringSpeed(5);
+    setCurrentIronGatheringSpeed(12.5);
     setIronGatheringSpeedChartData([]);
     setCurrentMudGatheringSpeed(10.2);
     setMudGatheringSpeedChartData([]);
@@ -2435,9 +2437,12 @@ function IslandSimulator() {
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* ── Graphs Grid ── */}
+          <div className="grid gap-6 grid-cols-1">
             {/* ── Earning Graph ── */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
                 Орлого зарлагын граф
               </h2>
@@ -2498,9 +2503,9 @@ function IslandSimulator() {
             {/* ── Gathering Speed Graphs ── */}
 
             {/* Snow Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
-                Цасны цуглуулах хурд
+                Snow цуглуулах хурд
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -2571,9 +2576,9 @@ function IslandSimulator() {
             </div>
 
             {/* Wood Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
-                Модны цуглуулах хурд
+                Wood цуглуулах хурд
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -2644,9 +2649,9 @@ function IslandSimulator() {
             </div>
 
             {/* Stone Gathering Speed Graph */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[500px] flex flex-col">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
               <h2 className="text-lg font-bold text-slate-100 mb-4">
-                Чулуу цуглуулах хурд
+                Stone цуглуулах хурд
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -2733,6 +2738,225 @@ function IslandSimulator() {
                       dataKey="min2"
                       stroke="#f97316"
                       name="Min2 (0.29)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Iron Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Iron цуглуулах хурд
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={ironGatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[0, 15]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(2) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="maxSpeed"
+                      stroke="#ef4444"
+                      name="Max Speed (13)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed"
+                      stroke="#f97316"
+                      name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#f97316", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#facc15"
+                      name="Min Speed (6.5)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Mud Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Mud цуглуулах хурд
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={mudGatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[0, 15]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(2) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="maxSpeed"
+                      stroke="#ef4444"
+                      name="Max Speed (13)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed"
+                      stroke="#eab308"
+                      name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#eab308", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#facc15"
+                      name="Min Speed (6.5)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Sand Gathering Speed Graph */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm h-[650px] flex flex-col">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">
+                Sand цуглуулах хурд
+              </h2>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={sandGatheringSpeedChartData}
+                    margin={{ bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="level"
+                      stroke="#94a3b8"
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      tick={{ fontSize: 11 }}
+                      height={50}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      domain={[0, 15]}
+                      label={{
+                        value: "Speed",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #475569",
+                      }}
+                      labelStyle={{ color: "#e2e8f0" }}
+                      formatter={(value) =>
+                        typeof value === "number" ? value.toFixed(2) : value
+                      }
+                      labelFormatter={(label) => `Level ${label}`}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                    <Line
+                      type="monotone"
+                      dataKey="maxSpeed"
+                      stroke="#ef4444"
+                      name="Max Speed (13)"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="speed"
+                      stroke="#fbbf24"
+                      name="Current Speed"
+                      strokeWidth={2}
+                      dot={{ fill: "#fbbf24", r: 3 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minSpeed"
+                      stroke="#facc15"
+                      name="Min Speed (6.5)"
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       dot={false}
