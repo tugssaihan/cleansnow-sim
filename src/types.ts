@@ -1,4 +1,4 @@
-export type Mode = "Snow" | "Wood" | "Stone";
+export type Mode = "Snow" | "Wood" | "Stone" | "Iron" | "Mud" | "Sand";
 
 export interface UpgradeState {
   gatherSpeed: number;
@@ -15,11 +15,14 @@ export interface MaterialRequirement {
   ice?: number;
   wood?: number;
   stone?: number;
+  iron?: number;
+  mud?: number;
+  sand?: number;
 }
 
 export interface BuildingState {
   id: number;
-  island: 1 | 2;
+  island: 1 | 2 | 3 | 4 | 5;
   floor: 1 | 2 | 3 | 4;
   requiredMaterials: MaterialRequirement;
   moneyReward: number;
@@ -43,6 +46,30 @@ export function generateBuildings(): BuildingState[] {
     [2, 4, 329, 400],
     [3, 4, 478, 600],
     [4, 3, 627, 800],
+  ];
+
+  // Island 3 configs: [floor, count, blocks, reward]
+  const island3Config: [number, number, number, number][] = [
+    [1, 3, 128, 300],
+    [2, 4, 272, 600],
+    [3, 4, 416, 900],
+    [4, 3, 560, 1200],
+  ];
+
+  // Island 4 configs: [floor, count, blocks, reward]
+  const island4Config: [number, number, number, number][] = [
+    [1, 3, 180, 400],
+    [2, 4, 329, 800],
+    [3, 4, 478, 1200],
+    [4, 3, 627, 1600],
+  ];
+
+  // Island 5 configs: [floor, count, blocks, reward]
+  const island5Config: [number, number, number, number][] = [
+    [1, 3, 180, 500],
+    [2, 4, 329, 1000],
+    [3, 4, 478, 1500],
+    [4, 3, 627, 2000],
   ];
 
   let id = 1;
@@ -81,6 +108,81 @@ export function generateBuildings(): BuildingState[] {
       buildings.push({
         id,
         island: 2,
+        floor: floor as 1 | 2 | 3 | 4,
+        requiredMaterials,
+        moneyReward: reward,
+        isBuilt: false,
+      });
+      id++;
+    }
+  }
+
+  // Generate Island 3 buildings (ids 29-42)
+  // 1-6: snow/wood/stone (thirds), 7-14: iron/wood/stone (iron replaces snow)
+  const island3Start = id;
+  for (const [floor, count, blocks, reward] of island3Config) {
+    for (let i = 0; i < count; i++) {
+      const buildingInIsland = id - island3Start + 1;
+      const m = Math.floor(blocks / 3);
+      const remainder = blocks - 2 * m;
+      const requiredMaterials: MaterialRequirement =
+        buildingInIsland <= 6
+          ? { ice: m, wood: m, stone: remainder }
+          : { iron: m, wood: m, stone: remainder };
+
+      buildings.push({
+        id,
+        island: 3,
+        floor: floor as 1 | 2 | 3 | 4,
+        requiredMaterials,
+        moneyReward: reward,
+        isBuilt: false,
+      });
+      id++;
+    }
+  }
+
+  // Generate Island 4 buildings (ids 43-56)
+  // 1-6: wood/stone/iron (thirds), 7-14: mud/stone/iron (mud replaces wood)
+  const island4Start = id;
+  for (const [floor, count, blocks, reward] of island4Config) {
+    for (let i = 0; i < count; i++) {
+      const buildingInIsland = id - island4Start + 1;
+      const m = Math.floor(blocks / 3);
+      const remainder = blocks - 2 * m;
+      const requiredMaterials: MaterialRequirement =
+        buildingInIsland <= 6
+          ? { wood: m, stone: m, iron: remainder }
+          : { mud: m, stone: m, iron: remainder };
+
+      buildings.push({
+        id,
+        island: 4,
+        floor: floor as 1 | 2 | 3 | 4,
+        requiredMaterials,
+        moneyReward: reward,
+        isBuilt: false,
+      });
+      id++;
+    }
+  }
+
+  // Generate Island 5 buildings (ids 57-70)
+  // 1-6: stone/iron/mud (thirds), 7-14: sand/iron/mud (sand replaces stone)
+  const island5Start = id;
+  for (const [floor, count, blocks, reward] of island5Config) {
+    for (let i = 0; i < count; i++) {
+      const buildingInIsland = id - island5Start + 1;
+      const m = Math.floor(blocks / 3);
+      const remainder = blocks - 2 * m;
+      const requiredMaterials: MaterialRequirement =
+        buildingInIsland <= 6
+          ? { stone: m, iron: m, mud: remainder }
+          : { sand: m, iron: m, mud: remainder };
+
+      buildings.push({
+        id,
+        island: 5,
         floor: floor as 1 | 2 | 3 | 4,
         requiredMaterials,
         moneyReward: reward,

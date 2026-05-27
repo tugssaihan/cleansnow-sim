@@ -118,6 +118,12 @@ function getMaterialsPerTick(mode: Mode, snowLevel: number): number {
       return 198;
     case "Stone":
       return 437;
+    case "Iron":
+      return 600;
+    case "Mud":
+      return 700;
+    case "Sand":
+      return 800;
     default:
       return 0;
   }
@@ -135,6 +141,9 @@ function BuildingCard({
   ice,
   wood,
   stone,
+  iron,
+  mud,
+  sand,
 }: {
   building: BuildingState;
   isNextToBuild: boolean;
@@ -143,6 +152,9 @@ function BuildingCard({
   ice: number;
   wood: number;
   stone: number;
+  iron: number;
+  mud: number;
+  sand: number;
 }) {
   const materialsDisplay: {
     label: string;
@@ -180,6 +192,39 @@ function BuildingCard({
       need: building.requiredMaterials.stone,
       color:
         stone >= building.requiredMaterials.stone
+          ? "text-emerald-400"
+          : "text-red-400",
+    });
+  }
+  if (building.requiredMaterials.iron) {
+    materialsDisplay.push({
+      label: "Iron",
+      have: iron,
+      need: building.requiredMaterials.iron,
+      color:
+        iron >= building.requiredMaterials.iron
+          ? "text-emerald-400"
+          : "text-red-400",
+    });
+  }
+  if (building.requiredMaterials.mud) {
+    materialsDisplay.push({
+      label: "Mud",
+      have: mud,
+      need: building.requiredMaterials.mud,
+      color:
+        mud >= building.requiredMaterials.mud
+          ? "text-emerald-400"
+          : "text-red-400",
+    });
+  }
+  if (building.requiredMaterials.sand) {
+    materialsDisplay.push({
+      label: "Sand",
+      have: sand,
+      need: building.requiredMaterials.sand,
+      color:
+        sand >= building.requiredMaterials.sand
           ? "text-emerald-400"
           : "text-red-400",
     });
@@ -674,6 +719,9 @@ function IslandSimulator() {
   const [ice, setIce] = useState(() => getInitialState("ice", 0));
   const [wood, setWood] = useState(() => getInitialState("wood", 0));
   const [stone, setStone] = useState(() => getInitialState("stone", 0));
+  const [iron, setIron] = useState(() => getInitialState("iron", 0));
+  const [mud, setMud] = useState(() => getInitialState("mud", 0));
+  const [sand, setSand] = useState(() => getInitialState("sand", 0));
   const [currentMode, setCurrentMode] = useState<Mode>(() =>
     getInitialState("currentMode", "Snow"),
   );
@@ -742,11 +790,20 @@ function IslandSimulator() {
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
+  const island3Buildings = buildings.filter((b) => b.island === 3);
+  const island4Buildings = buildings.filter((b) => b.island === 4);
+  const island5Buildings = buildings.filter((b) => b.island === 5);
   const island1Built = island1Buildings.filter((b) => b.isBuilt).length;
   const island2Built = island2Buildings.filter((b) => b.isBuilt).length;
+  const island3Built = island3Buildings.filter((b) => b.isBuilt).length;
+  const island4Built = island4Buildings.filter((b) => b.isBuilt).length;
+  const island5Built = island5Buildings.filter((b) => b.isBuilt).length;
 
   const canUseWood = island1Built >= 6;
   const canUseStone = island2Built >= 6;
+  const canUseIron = island3Built >= 6;
+  const canUseMud = island4Built >= 6;
+  const canUseSand = island5Built >= 6;
 
   const nextBuilding = buildings.find((b) => !b.isBuilt);
 
@@ -1034,6 +1091,9 @@ function IslandSimulator() {
       ice,
       wood,
       stone,
+      iron,
+      mud,
+      sand,
       currentMode,
       snowLevel,
       levelsPassed,
@@ -1058,6 +1118,9 @@ function IslandSimulator() {
     ice,
     wood,
     stone,
+    iron,
+    mud,
+    sand,
     currentMode,
     snowLevel,
     levelsPassed,
@@ -1189,15 +1252,24 @@ function IslandSimulator() {
     const requiredIce = req.ice ?? 0;
     const requiredWood = req.wood ?? 0;
     const requiredStone = req.stone ?? 0;
+    const requiredIron = req.iron ?? 0;
+    const requiredMud = req.mud ?? 0;
+    const requiredSand = req.sand ?? 0;
 
     if (requiredIce > 0 && ice < requiredIce) return;
     if (requiredWood > 0 && wood < requiredWood) return;
     if (requiredStone > 0 && stone < requiredStone) return;
+    if (requiredIron > 0 && iron < requiredIron) return;
+    if (requiredMud > 0 && mud < requiredMud) return;
+    if (requiredSand > 0 && sand < requiredSand) return;
 
     // Subtract required materials
     if (requiredIce > 0) setIce((i) => i - requiredIce);
     if (requiredWood > 0) setWood((w) => w - requiredWood);
     if (requiredStone > 0) setStone((s) => s - requiredStone);
+    if (requiredIron > 0) setIron((i) => i - requiredIron);
+    if (requiredMud > 0) setMud((m) => m - requiredMud);
+    if (requiredSand > 0) setSand((s) => s - requiredSand);
 
     // Mark building as built
     setBuildings((prev) => {
@@ -1221,6 +1293,12 @@ function IslandSimulator() {
       setWood((w) => w + earnedAmount);
     } else if (currentMode === "Stone") {
       setStone((s) => s + earnedAmount);
+    } else if (currentMode === "Iron") {
+      setIron((i) => i + earnedAmount);
+    } else if (currentMode === "Mud") {
+      setMud((m) => m + earnedAmount);
+    } else if (currentMode === "Sand") {
+      setSand((s) => s + earnedAmount);
     }
 
     setLevelsPassed((l) => l + 1);
@@ -1243,6 +1321,12 @@ function IslandSimulator() {
       setWood((w) => w + amount);
     } else if (currentMode === "Stone") {
       setStone((s) => s + amount);
+    } else if (currentMode === "Iron") {
+      setIron((i) => i + amount);
+    } else if (currentMode === "Mud") {
+      setMud((m) => m + amount);
+    } else if (currentMode === "Sand") {
+      setSand((s) => s + amount);
     }
 
     setLevelsPassed((l) => l + 1);
@@ -1257,6 +1341,9 @@ function IslandSimulator() {
     setIce(0);
     setWood(0);
     setStone(0);
+    setIron(0);
+    setMud(0);
+    setSand(0);
     setCurrentMode("Snow");
     setSnowLevel(1);
     setLevelsPassed(0);
@@ -1283,6 +1370,9 @@ function IslandSimulator() {
       ice,
       wood,
       stone,
+      iron,
+      mud,
+      sand,
       currentMode,
       snowLevel,
       levelsPassed,
@@ -1322,6 +1412,9 @@ function IslandSimulator() {
         setIce(gameState.ice ?? 0);
         setWood(gameState.wood ?? 0);
         setStone(gameState.stone ?? 0);
+        setIron(gameState.iron ?? 0);
+        setMud(gameState.mud ?? 0);
+        setSand(gameState.sand ?? 0);
         setCurrentMode(gameState.currentMode ?? "Snow");
         setSnowLevel(gameState.snowLevel ?? 1);
         setLevelsPassed(gameState.levelsPassed ?? 0);
@@ -1366,6 +1459,9 @@ function IslandSimulator() {
     setIce(0);
     setWood(0);
     setStone(0);
+    setIron(0);
+    setMud(0);
+    setSand(0);
     setCurrentMode("Snow");
     setSnowLevel(1);
     setLevelsPassed(0);
@@ -1444,6 +1540,24 @@ function IslandSimulator() {
                     {Math.floor(stone / 187)}
                   </span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-orange-400 font-bold">Fe</span>
+                  <span className="font-bold text-orange-300">
+                    {Math.floor(iron / 187)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-700 font-bold">M</span>
+                  <span className="font-bold text-yellow-600">
+                    {Math.floor(mud / 187)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-400 font-bold">Sd</span>
+                  <span className="font-bold text-yellow-300">
+                    {Math.floor(sand / 187)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -1506,10 +1620,15 @@ function IslandSimulator() {
                   Материал
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["Snow", "Wood", "Stone"] as Mode[]).map((mode) => {
+                  {(
+                    ["Snow", "Wood", "Stone", "Iron", "Mud", "Sand"] as Mode[]
+                  ).map((mode) => {
                     const isLocked =
                       (mode === "Wood" && !canUseWood) ||
-                      (mode === "Stone" && !canUseStone);
+                      (mode === "Stone" && !canUseStone) ||
+                      (mode === "Iron" && !canUseIron) ||
+                      (mode === "Mud" && !canUseMud) ||
+                      (mode === "Sand" && !canUseSand);
                     return (
                       <button
                         key={mode}
@@ -1540,6 +1659,21 @@ function IslandSimulator() {
                 {currentMode === "Stone" && !canUseStone && (
                   <p className="text-xs text-amber-400">
                     Build Island 2's first 6 buildings to unlock Stone
+                  </p>
+                )}
+                {currentMode === "Iron" && !canUseIron && (
+                  <p className="text-xs text-amber-400">
+                    Build Island 3's first 6 buildings to unlock Iron
+                  </p>
+                )}
+                {currentMode === "Mud" && !canUseMud && (
+                  <p className="text-xs text-amber-400">
+                    Build Island 4's first 6 buildings to unlock Mud
+                  </p>
+                )}
+                {currentMode === "Sand" && !canUseSand && (
+                  <p className="text-xs text-amber-400">
+                    Build Island 5's first 6 buildings to unlock Sand
                   </p>
                 )}
               </div>
@@ -1729,6 +1863,18 @@ function IslandSimulator() {
                   <span className="font-bold text-gray-400">{fmt(stone)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Iron:</span>
+                  <span className="font-bold text-orange-400">{fmt(iron)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Mud:</span>
+                  <span className="font-bold text-yellow-700">{fmt(mud)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Sand:</span>
+                  <span className="font-bold text-yellow-400">{fmt(sand)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Cash:</span>
                   <span className="font-bold text-violet-400">
                     ${fmt(money)}
@@ -1759,7 +1905,10 @@ function IslandSimulator() {
                       const hasEnoughMaterials =
                         (!req.ice || ice >= req.ice) &&
                         (!req.wood || wood >= req.wood) &&
-                        (!req.stone || stone >= req.stone);
+                        (!req.stone || stone >= req.stone) &&
+                        (!req.iron || iron >= req.iron) &&
+                        (!req.mud || mud >= req.mud) &&
+                        (!req.sand || sand >= req.sand);
                       return (
                         <BuildingCard
                           key={building.id}
@@ -1774,6 +1923,9 @@ function IslandSimulator() {
                           ice={ice}
                           wood={wood}
                           stone={stone}
+                          iron={iron}
+                          mud={mud}
+                          sand={sand}
                         />
                       );
                     })}
@@ -1794,7 +1946,10 @@ function IslandSimulator() {
                       const hasEnoughMaterials =
                         (!req.ice || ice >= req.ice) &&
                         (!req.wood || wood >= req.wood) &&
-                        (!req.stone || stone >= req.stone);
+                        (!req.stone || stone >= req.stone) &&
+                        (!req.iron || iron >= req.iron) &&
+                        (!req.mud || mud >= req.mud) &&
+                        (!req.sand || sand >= req.sand);
                       return (
                         <BuildingCard
                           key={building.id}
@@ -1809,6 +1964,132 @@ function IslandSimulator() {
                           ice={ice}
                           wood={wood}
                           stone={stone}
+                          iron={iron}
+                          mud={mud}
+                          sand={sand}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Island 3 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-emerald-400">Арал 3</h3>
+                    <span className="text-xs font-bold bg-emerald-500/15 text-emerald-300 px-2.5 py-1 rounded-lg">
+                      {island3Built}/14
+                    </span>
+                  </div>
+                  <div className="grid gap-2 grid-cols-4">
+                    {island3Buildings.map((building) => {
+                      const req = building.requiredMaterials;
+                      const hasEnoughMaterials =
+                        (!req.ice || ice >= req.ice) &&
+                        (!req.wood || wood >= req.wood) &&
+                        (!req.stone || stone >= req.stone) &&
+                        (!req.iron || iron >= req.iron) &&
+                        (!req.mud || mud >= req.mud) &&
+                        (!req.sand || sand >= req.sand);
+                      return (
+                        <BuildingCard
+                          key={building.id}
+                          building={building}
+                          isNextToBuild={building === nextBuilding}
+                          canBuild={
+                            !building.isBuilt &&
+                            hasEnoughMaterials &&
+                            building === nextBuilding
+                          }
+                          onBuild={() => buildBuilding(building.id)}
+                          ice={ice}
+                          wood={wood}
+                          stone={stone}
+                          iron={iron}
+                          mud={mud}
+                          sand={sand}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Island 4 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-violet-400">Арал 4</h3>
+                    <span className="text-xs font-bold bg-violet-500/15 text-violet-300 px-2.5 py-1 rounded-lg">
+                      {island4Built}/14
+                    </span>
+                  </div>
+                  <div className="grid gap-2 grid-cols-4">
+                    {island4Buildings.map((building) => {
+                      const req = building.requiredMaterials;
+                      const hasEnoughMaterials =
+                        (!req.ice || ice >= req.ice) &&
+                        (!req.wood || wood >= req.wood) &&
+                        (!req.stone || stone >= req.stone) &&
+                        (!req.iron || iron >= req.iron) &&
+                        (!req.mud || mud >= req.mud) &&
+                        (!req.sand || sand >= req.sand);
+                      return (
+                        <BuildingCard
+                          key={building.id}
+                          building={building}
+                          isNextToBuild={building === nextBuilding}
+                          canBuild={
+                            !building.isBuilt &&
+                            hasEnoughMaterials &&
+                            building === nextBuilding
+                          }
+                          onBuild={() => buildBuilding(building.id)}
+                          ice={ice}
+                          wood={wood}
+                          stone={stone}
+                          iron={iron}
+                          mud={mud}
+                          sand={sand}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Island 5 */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-rose-400">Арал 5</h3>
+                    <span className="text-xs font-bold bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-lg">
+                      {island5Built}/14
+                    </span>
+                  </div>
+                  <div className="grid gap-2 grid-cols-4">
+                    {island5Buildings.map((building) => {
+                      const req = building.requiredMaterials;
+                      const hasEnoughMaterials =
+                        (!req.ice || ice >= req.ice) &&
+                        (!req.wood || wood >= req.wood) &&
+                        (!req.stone || stone >= req.stone) &&
+                        (!req.iron || iron >= req.iron) &&
+                        (!req.mud || mud >= req.mud) &&
+                        (!req.sand || sand >= req.sand);
+                      return (
+                        <BuildingCard
+                          key={building.id}
+                          building={building}
+                          isNextToBuild={building === nextBuilding}
+                          canBuild={
+                            !building.isBuilt &&
+                            hasEnoughMaterials &&
+                            building === nextBuilding
+                          }
+                          onBuild={() => buildBuilding(building.id)}
+                          ice={ice}
+                          wood={wood}
+                          stone={stone}
+                          iron={iron}
+                          mud={mud}
+                          sand={sand}
                         />
                       );
                     })}
