@@ -39,7 +39,7 @@ const DEFAULT_UPGRADES: UpgradeState = {
   stoneGatherSpeed: 1,
   stoneGatherSize: 1,
   ironGatherSpeed: 1,
-  ironGatherSize: 1,
+  ironGatherSize: 12,
   mudGatherSpeed: 1,
   mudGatherSize: 1,
   sandGatherSpeed: 1,
@@ -56,7 +56,7 @@ const MAX_UPGRADE_LEVEL: Record<UpgradeKey, number | null> = {
   stoneGatherSpeed: null,
   stoneGatherSize: 10,
   ironGatherSpeed: null,
-  ironGatherSize: null,
+  ironGatherSize: 13,
   mudGatherSpeed: null,
   mudGatherSize: null,
   sandGatherSpeed: null,
@@ -161,7 +161,7 @@ function getMaterialsPerTick(mode: Mode, snowLevel: number): number {
     case "Stone":
       return 437;
     case "Iron":
-      return 600;
+      return 250;
     case "Mud":
       return 700;
     case "Sand":
@@ -295,7 +295,7 @@ function BuildingCard({
         <div className="space-y-0.5 mb-2 text-xs">
           {materialsDisplay.map((mat) => (
             <div key={mat.label} className="flex justify-between text-xs">
-              <span className="text-slate-400">{mat.label.charAt(0)}</span>
+              <span className="text-slate-400">{mat.label}</span>
               <span className={`font-bold ${mat.color}`}>
                 {fmt(mat.have)}/{fmt(mat.need)}
               </span>
@@ -829,6 +829,36 @@ function IslandSimulator() {
         max2: number;
       }>
     >(() => getInitialState("stoneGatheringSpeedChartData", []));
+  const [currentIronGatheringSpeed, setCurrentIronGatheringSpeed] = useState(
+    () => getInitialState("currentIronGatheringSpeed", 5),
+  );
+  const [ironGatheringSpeedChartData, setIronGatheringSpeedChartData] =
+    useState<
+      Array<{
+        level: number;
+        speed: number;
+        maxSpeed: number;
+        minSpeed: number;
+      }>
+    >(() => getInitialState("ironGatheringSpeedChartData", []));
+  const [currentMudGatheringSpeed, setCurrentMudGatheringSpeed] = useState(() =>
+    getInitialState("currentMudGatheringSpeed", 10.2),
+  );
+  const [mudGatheringSpeedChartData, setMudGatheringSpeedChartData] = useState<
+    Array<{ level: number; speed: number; maxSpeed: number; minSpeed: number }>
+  >(() => getInitialState("mudGatheringSpeedChartData", []));
+  const [currentSandGatheringSpeed, setCurrentSandGatheringSpeed] = useState(
+    () => getInitialState("currentSandGatheringSpeed", 10.2),
+  );
+  const [sandGatheringSpeedChartData, setSandGatheringSpeedChartData] =
+    useState<
+      Array<{
+        level: number;
+        speed: number;
+        maxSpeed: number;
+        minSpeed: number;
+      }>
+    >(() => getInitialState("sandGatheringSpeedChartData", []));
 
   const island1Buildings = buildings.filter((b) => b.island === 1);
   const island2Buildings = buildings.filter((b) => b.island === 2);
@@ -849,7 +879,7 @@ function IslandSimulator() {
 
   const nextBuilding = buildings.find((b) => !b.isBuilt);
 
-  const levelTotalSnow = getMaterialsPerTick("Snow", snowLevel);
+  const levelTotalSnow = getMaterialsPerTick(currentMode, snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
 
   // Initialize Snow gathering speed chart with level 0 starting value (always available)
@@ -896,6 +926,20 @@ function IslandSimulator() {
       ]);
     }
   }, [canUseStone]);
+
+  // Initialize Iron gathering speed chart when Iron mode unlocks
+  useEffect(() => {
+    if (canUseIron && ironGatheringSpeedChartData.length === 0) {
+      setIronGatheringSpeedChartData([
+        {
+          level: levelsPassed,
+          speed: 5,
+          maxSpeed: 20,
+          minSpeed: 5,
+        },
+      ]);
+    }
+  }, [canUseIron]);
 
   // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
   useEffect(() => {
@@ -1107,6 +1151,139 @@ function IslandSimulator() {
     canUseStone,
   ]);
 
+  // Update iron gathering speed chart data for all levels with Iron speed
+  useEffect(() => {
+    // Only show Iron speed data after Iron mode is unlocked
+    if (levelsPassed > 0 && canUseIron) {
+      setIronGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+
+        // Apply decrease formula every 3 levels
+        let displaySpeed = currentIronGatheringSpeed;
+        if (levelsPassed % 3 === 0) {
+          displaySpeed = (5 + currentIronGatheringSpeed) / 2;
+        }
+
+        // If we have an entry for this level, update it; otherwise add new one
+        if (lastEntry && lastEntry.level === levelsPassed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: levelsPassed,
+              speed: displaySpeed,
+              maxSpeed: 20,
+              minSpeed: 5,
+            },
+          ];
+        }
+
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: displaySpeed,
+            maxSpeed: 20,
+            minSpeed: 5,
+          },
+        ];
+      });
+    }
+  }, [currentIronGatheringSpeed, levelsPassed, canUseIron]);
+
+  // Initialize Mud gathering speed chart when Mud mode unlocks
+  useEffect(() => {
+    if (canUseMud && mudGatheringSpeedChartData.length === 0) {
+      setMudGatheringSpeedChartData([
+        {
+          level: levelsPassed,
+          speed: 10.2,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        },
+      ]);
+    }
+  }, [canUseMud]);
+
+  // Update mud gathering speed chart data for all levels with Mud speed
+  useEffect(() => {
+    if (levelsPassed > 0 && canUseMud) {
+      setMudGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        let displaySpeed = currentMudGatheringSpeed;
+        if (levelsPassed % 3 === 0) {
+          displaySpeed = (6.5 + currentMudGatheringSpeed) / 2;
+        }
+        if (lastEntry && lastEntry.level === levelsPassed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: levelsPassed,
+              speed: displaySpeed,
+              maxSpeed: 13,
+              minSpeed: 6.5,
+            },
+          ];
+        }
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: displaySpeed,
+            maxSpeed: 13,
+            minSpeed: 6.5,
+          },
+        ];
+      });
+    }
+  }, [currentMudGatheringSpeed, levelsPassed, canUseMud]);
+
+  // Initialize Sand gathering speed chart when Sand mode unlocks
+  useEffect(() => {
+    if (canUseSand && sandGatheringSpeedChartData.length === 0) {
+      setSandGatheringSpeedChartData([
+        {
+          level: levelsPassed,
+          speed: 10.2,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        },
+      ]);
+    }
+  }, [canUseSand]);
+
+  // Update sand gathering speed chart data for all levels with Sand speed
+  useEffect(() => {
+    if (levelsPassed > 0 && canUseSand) {
+      setSandGatheringSpeedChartData((prev) => {
+        const lastEntry = prev[prev.length - 1];
+        let displaySpeed = currentSandGatheringSpeed;
+        if (levelsPassed % 3 === 0) {
+          displaySpeed = (6.5 + currentSandGatheringSpeed) / 2;
+        }
+        if (lastEntry && lastEntry.level === levelsPassed) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              level: levelsPassed,
+              speed: displaySpeed,
+              maxSpeed: 13,
+              minSpeed: 6.5,
+            },
+          ];
+        }
+        return [
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: displaySpeed,
+            maxSpeed: 13,
+            minSpeed: 6.5,
+          },
+        ];
+      });
+    }
+  }, [currentSandGatheringSpeed, levelsPassed, canUseSand]);
+
   // Update economy chart data instantly when totalEarned or totalSpent changes
   useEffect(() => {
     if (levelsPassed > 0) {
@@ -1153,6 +1330,12 @@ function IslandSimulator() {
       currentStoneGatheringSpeed1,
       currentStoneGatheringSpeed2,
       stoneGatheringSpeedChartData,
+      currentIronGatheringSpeed,
+      ironGatheringSpeedChartData,
+      currentMudGatheringSpeed,
+      mudGatheringSpeedChartData,
+      currentSandGatheringSpeed,
+      sandGatheringSpeedChartData,
     };
     localStorage.setItem("cleansnowGameState", JSON.stringify(gameState));
   }, [
@@ -1180,6 +1363,12 @@ function IslandSimulator() {
     currentStoneGatheringSpeed1,
     currentStoneGatheringSpeed2,
     stoneGatheringSpeedChartData,
+    currentIronGatheringSpeed,
+    ironGatheringSpeedChartData,
+    currentMudGatheringSpeed,
+    mudGatheringSpeedChartData,
+    currentSandGatheringSpeed,
+    sandGatheringSpeedChartData,
   ]);
 
   function getLevelProgressBonus(level: number): number {
@@ -1246,19 +1435,19 @@ function IslandSimulator() {
       );
     }
 
-    // Iron upgrades: base 600, +160 per level
+    // Iron upgrades: cost = 650 + 130*level + 20*level^2
     if (key === "ironGatherSpeed" || key === "ironGatherSize") {
-      return 600 + (currentLevel - 1) * 160;
+      return 650 + 130 * currentLevel + 20 * currentLevel * currentLevel;
     }
 
-    // Mud upgrades: base 800, +190 per level
+    // Mud upgrades: cost = 1300 + 170*level + 30*level^2
     if (key === "mudGatherSpeed" || key === "mudGatherSize") {
-      return 800 + (currentLevel - 1) * 190;
+      return 1300 + 170 * currentLevel + 30 * currentLevel * currentLevel;
     }
 
-    // Sand upgrades: base 1000, +220 per level
+    // Sand upgrades: cost = 1750 + 210*level + 40*level^2
     if (key === "sandGatherSpeed" || key === "sandGatherSize") {
-      return 1000 + (currentLevel - 1) * 220;
+      return 1750 + 210 * currentLevel + 40 * currentLevel * currentLevel;
     }
 
     return 0;
@@ -1293,6 +1482,21 @@ function IslandSimulator() {
     if (key === "stoneGatherSpeed") {
       setCurrentStoneGatheringSpeed1((prev) => Math.max(0.05, prev - 0.004));
       setCurrentStoneGatheringSpeed2((prev) => Math.min(1, prev + 0.04));
+    }
+
+    // Increase iron gathering speed when ironGatherSpeed upgrade is purchased
+    if (key === "ironGatherSpeed") {
+      setCurrentIronGatheringSpeed((prev) => Math.min(20, prev + 0.5));
+    }
+
+    // Increase mud gathering speed when mudGatherSpeed upgrade is purchased
+    if (key === "mudGatherSpeed") {
+      setCurrentMudGatheringSpeed((prev) => Math.min(13, prev + 1));
+    }
+
+    // Increase sand gathering speed when sandGatherSpeed upgrade is purchased
+    if (key === "sandGatherSpeed") {
+      setCurrentSandGatheringSpeed((prev) => Math.min(13, prev + 1));
     }
   }
 
@@ -1419,6 +1623,12 @@ function IslandSimulator() {
     setCurrentStoneGatheringSpeed1(0.2);
     setCurrentStoneGatheringSpeed2(0.29);
     setStoneGatheringSpeedChartData([]);
+    setCurrentIronGatheringSpeed(5);
+    setIronGatheringSpeedChartData([]);
+    setCurrentMudGatheringSpeed(10.2);
+    setMudGatheringSpeedChartData([]);
+    setCurrentSandGatheringSpeed(10.2);
+    setSandGatheringSpeedChartData([]);
   }
 
   function saveGame() {
@@ -1497,6 +1707,20 @@ function IslandSimulator() {
         setStoneGatheringSpeedChartData(
           gameState.stoneGatheringSpeedChartData ?? [],
         );
+        setCurrentIronGatheringSpeed(gameState.currentIronGatheringSpeed ?? 5);
+        setIronGatheringSpeedChartData(
+          gameState.ironGatheringSpeedChartData ?? [],
+        );
+        setCurrentMudGatheringSpeed(gameState.currentMudGatheringSpeed ?? 10.2);
+        setMudGatheringSpeedChartData(
+          gameState.mudGatheringSpeedChartData ?? [],
+        );
+        setCurrentSandGatheringSpeed(
+          gameState.currentSandGatheringSpeed ?? 10.2,
+        );
+        setSandGatheringSpeedChartData(
+          gameState.sandGatheringSpeedChartData ?? [],
+        );
         if (gameState.gameSettings) {
           setGameSettings(gameState.gameSettings);
         }
@@ -1537,6 +1761,12 @@ function IslandSimulator() {
     setCurrentStoneGatheringSpeed1(0.2);
     setCurrentStoneGatheringSpeed2(0.29);
     setStoneGatheringSpeedChartData([]);
+    setCurrentIronGatheringSpeed(5);
+    setIronGatheringSpeedChartData([]);
+    setCurrentMudGatheringSpeed(10.2);
+    setMudGatheringSpeedChartData([]);
+    setCurrentSandGatheringSpeed(10.2);
+    setSandGatheringSpeedChartData([]);
   }
 
   return (
