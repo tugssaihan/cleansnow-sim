@@ -98,12 +98,12 @@ const UPGRADE_META: Record<
     color: "text-lime-400",
   },
   stoneGatherSpeed: {
-    label: "Stone Speed",
+    label: "Stone хурд",
     icon: <Zap className="h-4 w-4" />,
     color: "text-slate-300",
   },
   stoneGatherSize: {
-    label: "Stone Size",
+    label: "Stone Хэмжээ",
     icon: <Package className="h-4 w-4" />,
     color: "text-gray-400",
   },
@@ -1214,17 +1214,17 @@ function IslandSimulator() {
   useEffect(() => {
     // Only show Stone speed data after Stone mode is unlocked
     if (levelsPassed > 0 && canUseStone) {
-      // Apply reset every 3 levels (at levels 3, 6, 9, etc.) only when in Stone mode
-      if (currentMode === "Stone" && levelsPassed % 3 === 0) {
-        setCurrentStoneGatheringSpeed1(0.2);
-        setCurrentStoneGatheringSpeed2(0.29);
-      }
-
       setStoneGatheringSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
 
         let displaySpeed1 = currentStoneGatheringSpeed1;
         let displaySpeed2 = currentStoneGatheringSpeed2;
+
+        // Apply decrease formula every 3 levels
+        if (levelsPassed % 3 === 0) {
+          displaySpeed1 = (0.05 + currentStoneGatheringSpeed1) / 2;
+          displaySpeed2 = (0.29 + currentStoneGatheringSpeed2) / 2;
+        }
 
         // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
@@ -2846,7 +2846,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="speed1"
                       stroke="#06b6d4"
-                      name="Speed1"
+                      name="Stone доошлох хурд"
                       strokeWidth={2}
                       dot={{ fill: "#06b6d4", r: 3 }}
                     />
@@ -2872,7 +2872,7 @@ function IslandSimulator() {
                       type="monotone"
                       dataKey="speed2"
                       stroke="#10b981"
-                      name="Speed2"
+                      name="Stone ухах хурд"
                       strokeWidth={2}
                       dot={{ fill: "#10b981", r: 3 }}
                     />
