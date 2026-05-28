@@ -352,6 +352,12 @@ interface GameSettings {
   stoneSpeedIncrement: number;
   stoneSizeBaseCost: number;
   stoneSizeIncrement: number;
+  ironSpeedBaseCost: number;
+  ironSizeBaseCost: number;
+  mudSpeedBaseCost: number;
+  mudSizeBaseCost: number;
+  sandSpeedBaseCost: number;
+  sandSizeBaseCost: number;
   maxSpeed: number;
   minSpeed: number;
 }
@@ -373,6 +379,12 @@ const DEFAULT_SETTINGS: GameSettings = {
   stoneSpeedIncrement: 130,
   stoneSizeBaseCost: 400,
   stoneSizeIncrement: 130,
+  ironSpeedBaseCost: 800,
+  ironSizeBaseCost: 800,
+  mudSpeedBaseCost: 1500,
+  mudSizeBaseCost: 1500,
+  sandSpeedBaseCost: 2000,
+  sandSizeBaseCost: 2000,
   maxSpeed: 13,
   minSpeed: 6.5,
 };
@@ -676,35 +688,104 @@ function SettingsModal({
             </div>
           </div>
 
-          {/* Speed Decrease Formula */}
+          {/* Iron Upgrades */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
-            <h3 className="text-lg font-bold text-cyan-300 mb-3">
-              Speed Decrease (Every 3 Levels)
+            <h3 className="text-lg font-bold text-orange-400 mb-3">
+              Iron Upgrades
             </h3>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">
-                  Max Speed: {localSettings.maxSpeed}
+                  Speed Base Cost
                 </label>
                 <input
                   type="number"
-                  value={localSettings.maxSpeed}
+                  value={localSettings.ironSpeedBaseCost}
                   onChange={(e) =>
-                    handleInputChange("maxSpeed", e.target.value)
+                    handleInputChange("ironSpeedBaseCost", e.target.value)
                   }
                   className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">
-                  Min Speed: {localSettings.minSpeed.toFixed(1)}
+                  Size Base Cost
                 </label>
                 <input
                   type="number"
-                  step="0.1"
-                  value={localSettings.minSpeed}
+                  value={localSettings.ironSizeBaseCost}
                   onChange={(e) =>
-                    handleInputChange("minSpeed", e.target.value)
+                    handleInputChange("ironSizeBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mud Upgrades */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-yellow-700 mb-3">
+              Mud Upgrades
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.mudSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("mudSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.mudSizeBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("mudSizeBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sand Upgrades */}
+          <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+            <h3 className="text-lg font-bold text-yellow-400 mb-3">
+              Sand Upgrades
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Speed Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.sandSpeedBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("sandSpeedBaseCost", e.target.value)
+                  }
+                  className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">
+                  Size Base Cost
+                </label>
+                <input
+                  type="number"
+                  value={localSettings.sandSizeBaseCost}
+                  onChange={(e) =>
+                    handleInputChange("sandSizeBaseCost", e.target.value)
                   }
                   className="w-full rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm font-semibold text-slate-100"
                 />
@@ -1161,7 +1242,7 @@ function IslandSimulator() {
         // Apply decrease formula every 3 levels
         let displaySpeed = currentIronGatheringSpeed;
         if (levelsPassed % 3 === 0) {
-          displaySpeed = (6.5 + currentIronGatheringSpeed) / 2;
+          displaySpeed = (5 + currentIronGatheringSpeed) / 2;
         }
 
         // If we have an entry for this level, update it; otherwise add new one
@@ -1172,7 +1253,7 @@ function IslandSimulator() {
               level: levelsPassed,
               speed: displaySpeed,
               maxSpeed: 13,
-              minSpeed: 6.5,
+              minSpeed: 5,
             },
           ];
         }
@@ -1183,7 +1264,7 @@ function IslandSimulator() {
             level: levelsPassed,
             speed: displaySpeed,
             maxSpeed: 13,
-            minSpeed: 6.5,
+            minSpeed: 5,
           },
         ];
       });
@@ -1435,19 +1516,34 @@ function IslandSimulator() {
       );
     }
 
-    // Iron upgrades: cost = 650 + 130*level + 20*level^2
+    // Iron upgrades: dynamic formula - current_cost + 150 + 40 * upgrade_count
     if (key === "ironGatherSpeed" || key === "ironGatherSize") {
-      return 650 + 130 * currentLevel + 20 * currentLevel * currentLevel;
+      if (currentLevel === 1) return gameSettings.ironSpeedBaseCost;
+      let cost = gameSettings.ironSpeedBaseCost;
+      for (let i = 1; i < currentLevel; i++) {
+        cost = cost + 150 + 40 * i;
+      }
+      return cost;
     }
 
-    // Mud upgrades: cost = 1300 + 170*level + 30*level^2
+    // Mud upgrades: dynamic formula - current_cost + 200 + 60 * upgrade_count
     if (key === "mudGatherSpeed" || key === "mudGatherSize") {
-      return 1300 + 170 * currentLevel + 30 * currentLevel * currentLevel;
+      if (currentLevel === 1) return gameSettings.mudSpeedBaseCost;
+      let cost = gameSettings.mudSpeedBaseCost;
+      for (let i = 1; i < currentLevel; i++) {
+        cost = cost + 200 + 60 * i;
+      }
+      return cost;
     }
 
-    // Sand upgrades: cost = 1750 + 210*level + 40*level^2
+    // Sand upgrades: dynamic formula - current_cost + 250 + 80 * upgrade_count
     if (key === "sandGatherSpeed" || key === "sandGatherSize") {
-      return 1750 + 210 * currentLevel + 40 * currentLevel * currentLevel;
+      if (currentLevel === 1) return gameSettings.sandSpeedBaseCost;
+      let cost = gameSettings.sandSpeedBaseCost;
+      for (let i = 1; i < currentLevel; i++) {
+        cost = cost + 250 + 80 * i;
+      }
+      return cost;
     }
 
     return 0;
@@ -2801,7 +2897,7 @@ function IslandSimulator() {
                     <Line
                       type="monotone"
                       dataKey="speed"
-                      stroke="#f97316"
+                      stroke="#24fb41"
                       name="Current Speed"
                       strokeWidth={2}
                       dot={{ fill: "#f97316", r: 3 }}
@@ -2874,7 +2970,7 @@ function IslandSimulator() {
                     <Line
                       type="monotone"
                       dataKey="speed"
-                      stroke="#eab308"
+                      stroke="#24fb41"
                       name="Current Speed"
                       strokeWidth={2}
                       dot={{ fill: "#eab308", r: 3 }}
@@ -2947,7 +3043,7 @@ function IslandSimulator() {
                     <Line
                       type="monotone"
                       dataKey="speed"
-                      stroke="#fbbf24"
+                      stroke="#24fb41"
                       name="Current Speed"
                       strokeWidth={2}
                       dot={{ fill: "#fbbf24", r: 3 }}
