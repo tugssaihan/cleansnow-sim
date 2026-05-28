@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { BuildingState, Mode, UpgradeState } from "./types";
 import { generateBuildings } from "./types";
 import {
@@ -39,7 +39,7 @@ const DEFAULT_UPGRADES: UpgradeState = {
   stoneGatherSpeed: 1,
   stoneGatherSize: 1,
   ironGatherSpeed: 1,
-  ironGatherSize: 12,
+  ironGatherSize: 1,
   mudGatherSpeed: 1,
   mudGatherSize: 1,
   sandGatherSpeed: 1,
@@ -56,11 +56,11 @@ const MAX_UPGRADE_LEVEL: Record<UpgradeKey, number | null> = {
   stoneGatherSpeed: null,
   stoneGatherSize: 10,
   ironGatherSpeed: null,
-  ironGatherSize: 13,
+  ironGatherSize: 10,
   mudGatherSpeed: null,
-  mudGatherSize: null,
+  mudGatherSize: 10,
   sandGatherSpeed: null,
-  sandGatherSize: null,
+  sandGatherSize: 10,
 };
 
 const UPGRADE_META: Record<
@@ -141,6 +141,15 @@ const UPGRADE_META: Record<
 
 function fmt(n: number) {
   return n.toLocaleString();
+}
+
+// Limit chart data to prevent performance issues with huge arrays
+const MAX_CHART_POINTS = 100;
+function limitChartData<T extends { level: number }>(data: T[]): T[] {
+  if (data.length > MAX_CHART_POINTS) {
+    return data.slice(data.length - MAX_CHART_POINTS);
+  }
+  return data;
 }
 
 function getSnowYield(level: number): number {
@@ -821,12 +830,31 @@ function SettingsModal({
 }
 
 function IslandSimulator() {
+  // Ref for debouncing localStorage saves
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Helper to load from localStorage - used in useState initializers
   const getInitialState = <T,>(key: string, defaultValue: T): T => {
     try {
       const savedState = localStorage.getItem("cleansnowGameState");
       if (savedState) {
         const state = JSON.parse(savedState);
+
+        // Migration: Fix iron size upgrade bug and apply new size limits
+        if (key === "upgrades" && state.upgrades) {
+          // Fix iron size stuck at 12 or above the limit
+          if (state.upgrades.ironGatherSize > 10) {
+            state.upgrades.ironGatherSize = 1;
+          }
+          // Apply 10 limit to mud and sand sizes
+          if (state.upgrades.mudGatherSize > 10) {
+            state.upgrades.mudGatherSize = 10;
+          }
+          if (state.upgrades.sandGatherSize > 10) {
+            state.upgrades.sandGatherSize = 10;
+          }
+        }
+
         return state[key] ?? defaultValue;
       }
     } catch (error) {
@@ -1033,9 +1061,9 @@ function IslandSimulator() {
       };
 
       if (lastEntry && lastEntry.level === levelsPassed) {
-        return [...prev.slice(0, -1), newEntry];
+        return limitChartData([...prev.slice(0, -1), newEntry]);
       }
-      return [...prev, newEntry];
+      return limitChartData([...prev, newEntry]);
     });
 
     // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
@@ -1047,28 +1075,32 @@ function IslandSimulator() {
           minSpeed,
           minSpeed + (prev - minSpeed) * (1 - SPEED_DEGRADATION_RATE),
         );
-        setMoveSpeedChartData((chartPrev) => [
-          ...chartPrev,
-          {
-            level: levelsPassed,
-            speed: newSpeed,
-            maxSpeed: gameSettings.maxSpeed,
-            minSpeed: gameSettings.minSpeed,
-          },
-        ]);
+        setMoveSpeedChartData((chartPrev) =>
+          limitChartData([
+            ...chartPrev,
+            {
+              level: levelsPassed,
+              speed: newSpeed,
+              maxSpeed: gameSettings.maxSpeed,
+              minSpeed: gameSettings.minSpeed,
+            },
+          ]),
+        );
         return newSpeed;
       });
     } else if (levelsPassed > 0) {
       // Just add move speed chart entry (gathering speeds handled by their own effects)
-      setMoveSpeedChartData((prev) => [
-        ...prev,
-        {
-          level: levelsPassed,
-          speed: currentSpeed,
-          maxSpeed: gameSettings.maxSpeed,
-          minSpeed: gameSettings.minSpeed,
-        },
-      ]);
+      setMoveSpeedChartData((prev) =>
+        limitChartData([
+          ...prev,
+          {
+            level: levelsPassed,
+            speed: currentSpeed,
+            maxSpeed: gameSettings.maxSpeed,
+            minSpeed: gameSettings.minSpeed,
+          },
+        ]),
+      );
     }
   }, [
     levelsPassed,
@@ -1085,7 +1117,7 @@ function IslandSimulator() {
       setMoveSpeedChartData((prev) => {
         const lastEntry = prev[prev.length - 1];
         if (lastEntry && lastEntry.speed !== currentSpeed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: lastEntry.level,
@@ -1093,7 +1125,7 @@ function IslandSimulator() {
               maxSpeed: gameSettings.maxSpeed,
               minSpeed: gameSettings.minSpeed,
             },
-          ];
+          ]);
         }
         return prev;
       });
@@ -1115,7 +1147,7 @@ function IslandSimulator() {
 
         // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1123,10 +1155,10 @@ function IslandSimulator() {
               maxSpeed: 13,
               minSpeed: 6.5,
             },
-          ];
+          ]);
         }
 
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1134,7 +1166,7 @@ function IslandSimulator() {
             maxSpeed: 13,
             minSpeed: 6.5,
           },
-        ];
+        ]);
       });
     }
   }, [currentGatheringSpeed, levelsPassed, canUseStone]);
@@ -1154,7 +1186,7 @@ function IslandSimulator() {
 
         // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1162,10 +1194,10 @@ function IslandSimulator() {
               maxSpeed: 20,
               minSpeed: 5,
             },
-          ];
+          ]);
         }
 
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1173,7 +1205,7 @@ function IslandSimulator() {
             maxSpeed: 20,
             minSpeed: 5,
           },
-        ];
+        ]);
       });
     }
   }, [currentWoodGatheringSpeed, levelsPassed, canUseWood]);
@@ -1196,7 +1228,7 @@ function IslandSimulator() {
 
         // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1207,10 +1239,10 @@ function IslandSimulator() {
               min2: 0.29,
               max2: 1,
             },
-          ];
+          ]);
         }
 
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1221,7 +1253,7 @@ function IslandSimulator() {
             min2: 0.29,
             max2: 1,
           },
-        ];
+        ]);
       });
     }
   }, [
@@ -1247,7 +1279,7 @@ function IslandSimulator() {
 
         // If we have an entry for this level, update it; otherwise add new one
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1255,10 +1287,10 @@ function IslandSimulator() {
               maxSpeed: 13,
               minSpeed: 5,
             },
-          ];
+          ]);
         }
 
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1266,7 +1298,7 @@ function IslandSimulator() {
             maxSpeed: 13,
             minSpeed: 5,
           },
-        ];
+        ]);
       });
     }
   }, [currentIronGatheringSpeed, levelsPassed, canUseIron]);
@@ -1295,7 +1327,7 @@ function IslandSimulator() {
           displaySpeed = (6.5 + currentMudGatheringSpeed) / 2;
         }
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1303,9 +1335,9 @@ function IslandSimulator() {
               maxSpeed: 13,
               minSpeed: 6.5,
             },
-          ];
+          ]);
         }
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1313,7 +1345,7 @@ function IslandSimulator() {
             maxSpeed: 13,
             minSpeed: 6.5,
           },
-        ];
+        ]);
       });
     }
   }, [currentMudGatheringSpeed, levelsPassed, canUseMud]);
@@ -1342,7 +1374,7 @@ function IslandSimulator() {
           displaySpeed = (6.5 + currentSandGatheringSpeed) / 2;
         }
         if (lastEntry && lastEntry.level === levelsPassed) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             {
               level: levelsPassed,
@@ -1350,9 +1382,9 @@ function IslandSimulator() {
               maxSpeed: 13,
               minSpeed: 6.5,
             },
-          ];
+          ]);
         }
-        return [
+        return limitChartData([
           ...prev,
           {
             level: levelsPassed,
@@ -1360,7 +1392,7 @@ function IslandSimulator() {
             maxSpeed: 13,
             minSpeed: 6.5,
           },
-        ];
+        ]);
       });
     }
   }, [currentSandGatheringSpeed, levelsPassed, canUseSand]);
@@ -1374,51 +1406,66 @@ function IslandSimulator() {
           lastEntry &&
           (lastEntry.earned !== totalEarned || lastEntry.spent !== totalSpent)
         ) {
-          return [
+          return limitChartData([
             ...prev.slice(0, -1),
             { level: lastEntry.level, earned: totalEarned, spent: totalSpent },
-          ];
+          ]);
         }
         return prev;
       });
     }
   }, [totalEarned, totalSpent, levelsPassed]);
 
-  // Save game state to localStorage whenever it changes
+  // Save game state to localStorage with debouncing - only saves after state changes stop for 500ms
   useEffect(() => {
-    const gameState = {
-      money,
-      ice,
-      wood,
-      stone,
-      iron,
-      mud,
-      sand,
-      currentMode,
-      snowLevel,
-      levelsPassed,
-      totalSpent,
-      totalEarned,
-      upgrades,
-      buildings,
-      chartData,
-      currentSpeed,
-      moveSpeedChartData,
-      currentGatheringSpeed,
-      gatheringSpeedChartData,
-      currentWoodGatheringSpeed,
-      woodGatheringSpeedChartData,
-      currentStoneGatheringSpeed1,
-      currentStoneGatheringSpeed2,
-      stoneGatheringSpeedChartData,
-      currentIronGatheringSpeed,
-      ironGatheringSpeedChartData,
-      currentMudGatheringSpeed,
-      mudGatheringSpeedChartData,
-      currentSandGatheringSpeed,
-      sandGatheringSpeedChartData,
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced save
+    saveTimeoutRef.current = setTimeout(() => {
+      const gameState = {
+        money,
+        ice,
+        wood,
+        stone,
+        iron,
+        mud,
+        sand,
+        currentMode,
+        snowLevel,
+        levelsPassed,
+        totalSpent,
+        totalEarned,
+        upgrades,
+        buildings,
+        chartData,
+        currentSpeed,
+        moveSpeedChartData,
+        currentGatheringSpeed,
+        gatheringSpeedChartData,
+        currentWoodGatheringSpeed,
+        woodGatheringSpeedChartData,
+        currentStoneGatheringSpeed1,
+        currentStoneGatheringSpeed2,
+        stoneGatheringSpeedChartData,
+        currentIronGatheringSpeed,
+        ironGatheringSpeedChartData,
+        currentMudGatheringSpeed,
+        mudGatheringSpeedChartData,
+        currentSandGatheringSpeed,
+        sandGatheringSpeedChartData,
+      };
+      localStorage.setItem("cleansnowGameState", JSON.stringify(gameState));
+    }, 500);
+
+    // Cleanup: clear timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
     };
-    localStorage.setItem("cleansnowGameState", JSON.stringify(gameState));
   }, [
     money,
     ice,
