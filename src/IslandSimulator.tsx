@@ -1093,8 +1093,8 @@ function IslandSimulator() {
     return Math.ceil(level / 3) * 33;
   }
 
-  function getUpgradeCost(key: UpgradeKey): number {
-    const currentLevel = upgrades[key];
+  function getUpgradeCostAtLevel(key: UpgradeKey, level: number): number {
+    const currentLevel = level;
     const max = MAX_UPGRADE_LEVEL[key];
     if (max && currentLevel >= max) return 0; // Can't upgrade further
 
@@ -1183,6 +1183,91 @@ function IslandSimulator() {
     }
 
     return 0;
+  }
+
+  function getUpgradeCost(key: UpgradeKey): number {
+    return getUpgradeCostAtLevel(key, upgrades[key]);
+  }
+
+  function getSelectedModeSpeedUpgradeKey(mode: Mode): UpgradeKey {
+    switch (mode) {
+      case "Snow":
+        return "gatherSpeed";
+      case "Wood":
+        return "woodGatherSpeed";
+      case "Stone":
+        return "stoneGatherSpeed";
+      case "Iron":
+        return "ironGatherSpeed";
+      case "Mud":
+        return "mudGatherSpeed";
+      case "Sand":
+        return "sandGatherSpeed";
+      default:
+        return "gatherSpeed";
+    }
+  }
+
+  function buyMaxSelectedModeSpeed() {
+    const key = getSelectedModeSpeedUpgradeKey(currentMode);
+    let nextLevel = upgrades[key];
+    let remainingMoney = money;
+    let totalCost = 0;
+    let purchases = 0;
+
+    while (true) {
+      const cost = getUpgradeCostAtLevel(key, nextLevel);
+      if (cost === 0 || remainingMoney < cost) {
+        break;
+      }
+
+      remainingMoney -= cost;
+      totalCost += cost;
+      nextLevel += 1;
+      purchases += 1;
+    }
+
+    if (purchases === 0) {
+      return;
+    }
+
+    setMoney(remainingMoney);
+    setTotalSpent((spent) => spent + totalCost);
+    setUpgrades((prev) => ({
+      ...prev,
+      [key]: prev[key] + purchases,
+    }));
+
+    if (key === "gatherSpeed") {
+      setCurrentGatheringSpeed((prev) => Math.min(13, prev + purchases));
+    }
+
+    if (key === "woodGatherSpeed") {
+      setCurrentWoodGatheringSpeed((prev) =>
+        Math.min(20, prev + purchases * 0.5),
+      );
+    }
+
+    if (key === "stoneGatherSpeed") {
+      setCurrentStoneGatheringSpeed1((prev) =>
+        Math.max(0.05, prev - purchases * 0.004),
+      );
+      setCurrentStoneGatheringSpeed2((prev) =>
+        Math.min(1, prev + purchases * 0.04),
+      );
+    }
+
+    if (key === "ironGatherSpeed") {
+      setCurrentIronGatheringSpeed((prev) => Math.min(13, prev + purchases));
+    }
+
+    if (key === "mudGatherSpeed") {
+      setCurrentMudGatheringSpeed((prev) => Math.min(13, prev + purchases));
+    }
+
+    if (key === "sandGatherSpeed") {
+      setCurrentSandGatheringSpeed((prev) => Math.min(13, prev + purchases));
+    }
   }
 
   function buyUpgrade(key: UpgradeKey) {
@@ -1280,6 +1365,7 @@ function IslandSimulator() {
     const fieldBonus =
       currentMode === "Snow" ? 19 * getSnowPriceMultiplier(snowLevel) : 0;
     const totalMoney = moneyFromMaterial + levelProgressBonus + fieldBonus;
+    const nextLevelsPassed = levelsPassed + 1;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -1296,6 +1382,34 @@ function IslandSimulator() {
       setSand((s) => s + earnedAmount);
     }
 
+    const nextTotalEarned = totalEarned + totalMoney;
+    const nextCurrentSpeed =
+      nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+        ? Math.max(
+            gameSettings.minSpeed,
+            gameSettings.minSpeed +
+              (currentSpeed - gameSettings.minSpeed) * 0.5,
+          )
+        : currentSpeed;
+
+    const nextGraphState = buildSaveGraphState(
+      nextLevelsPassed,
+      nextTotalEarned,
+      totalSpent,
+      nextCurrentSpeed,
+    );
+
+    setChartData(nextGraphState.chartData);
+    setMoveSpeedChartData(nextGraphState.moveSpeedChartData);
+    setGatheringSpeedChartData(nextGraphState.gatheringSpeedChartData);
+    setWoodGatheringSpeedChartData(nextGraphState.woodGatheringSpeedChartData);
+    setStoneGatheringSpeedChartData(
+      nextGraphState.stoneGatheringSpeedChartData,
+    );
+    setIronGatheringSpeedChartData(nextGraphState.ironGatheringSpeedChartData);
+    setMudGatheringSpeedChartData(nextGraphState.mudGatheringSpeedChartData);
+    setSandGatheringSpeedChartData(nextGraphState.sandGatheringSpeedChartData);
+
     setLevelsPassed((l) => l + 1);
     setSnowLevel((sl) => sl + 1);
     setMoney((m) => m + totalMoney);
@@ -1310,6 +1424,7 @@ function IslandSimulator() {
     const fieldBonus =
       currentMode === "Snow" ? 19 * getSnowPriceMultiplier(snowLevel) : 0;
     const totalMoney = moneyFromMaterial + levelProgressBonus + fieldBonus;
+    const nextLevelsPassed = levelsPassed + 1;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -1325,6 +1440,34 @@ function IslandSimulator() {
     } else if (currentMode === "Sand") {
       setSand((s) => s + amount);
     }
+
+    const nextTotalEarned = totalEarned + totalMoney;
+    const nextCurrentSpeed =
+      nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+        ? Math.max(
+            gameSettings.minSpeed,
+            gameSettings.minSpeed +
+              (currentSpeed - gameSettings.minSpeed) * 0.5,
+          )
+        : currentSpeed;
+
+    const nextGraphState = buildSaveGraphState(
+      nextLevelsPassed,
+      nextTotalEarned,
+      totalSpent,
+      nextCurrentSpeed,
+    );
+
+    setChartData(nextGraphState.chartData);
+    setMoveSpeedChartData(nextGraphState.moveSpeedChartData);
+    setGatheringSpeedChartData(nextGraphState.gatheringSpeedChartData);
+    setWoodGatheringSpeedChartData(nextGraphState.woodGatheringSpeedChartData);
+    setStoneGatheringSpeedChartData(
+      nextGraphState.stoneGatheringSpeedChartData,
+    );
+    setIronGatheringSpeedChartData(nextGraphState.ironGatheringSpeedChartData);
+    setMudGatheringSpeedChartData(nextGraphState.mudGatheringSpeedChartData);
+    setSandGatheringSpeedChartData(nextGraphState.sandGatheringSpeedChartData);
 
     setLevelsPassed((l) => l + 1);
     setSnowLevel((sl) => sl + 1);
@@ -1383,25 +1526,30 @@ function IslandSimulator() {
     return limitChartData([...data, entry]);
   }
 
-  function buildSaveGraphState() {
+  function buildSaveGraphState(
+    nextLevelsPassed = levelsPassed,
+    nextTotalEarned = totalEarned,
+    nextTotalSpent = totalSpent,
+    nextCurrentSpeed = currentSpeed,
+  ) {
     const nextChartData = upsertChartEntry(chartData, {
-      level: levelsPassed,
-      earned: totalEarned,
-      spent: totalSpent,
+      level: nextLevelsPassed,
+      earned: nextTotalEarned,
+      spent: nextTotalSpent,
     });
 
     const nextMoveSpeedChartData = upsertChartEntry(moveSpeedChartData, {
-      level: levelsPassed,
-      speed: currentSpeed,
+      level: nextLevelsPassed,
+      speed: nextCurrentSpeed,
       maxSpeed: gameSettings.maxSpeed,
       minSpeed: gameSettings.minSpeed,
     });
 
     const nextGatheringSpeedChartData = !canUseStone
       ? upsertChartEntry(gatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (6.5 + currentGatheringSpeed) / 2
               : currentGatheringSpeed,
           maxSpeed: 13,
@@ -1411,9 +1559,9 @@ function IslandSimulator() {
 
     const nextWoodGatheringSpeedChartData = canUseWood
       ? upsertChartEntry(woodGatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (5 + currentWoodGatheringSpeed) / 2
               : currentWoodGatheringSpeed,
           maxSpeed: 20,
@@ -1423,14 +1571,14 @@ function IslandSimulator() {
 
     const nextStoneGatheringSpeedChartData = canUseStone
       ? upsertChartEntry(stoneGatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed1:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (0.2 + currentStoneGatheringSpeed1) / 2
               : currentStoneGatheringSpeed1,
           speed2:
-            levelsPassed > 0 && levelsPassed % 3 === 0
-              ? (1 + currentStoneGatheringSpeed2) / 2
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+              ? (0.29 + currentStoneGatheringSpeed2) / 2
               : currentStoneGatheringSpeed2,
           min1: 0.05,
           max1: 0.2,
@@ -1441,9 +1589,9 @@ function IslandSimulator() {
 
     const nextIronGatheringSpeedChartData = canUseIron
       ? upsertChartEntry(ironGatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (5 + currentIronGatheringSpeed) / 2
               : currentIronGatheringSpeed,
           maxSpeed: 13,
@@ -1453,9 +1601,9 @@ function IslandSimulator() {
 
     const nextMudGatheringSpeedChartData = canUseMud
       ? upsertChartEntry(mudGatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (6.5 + currentMudGatheringSpeed) / 2
               : currentMudGatheringSpeed,
           maxSpeed: 13,
@@ -1465,9 +1613,9 @@ function IslandSimulator() {
 
     const nextSandGatheringSpeedChartData = canUseSand
       ? upsertChartEntry(sandGatheringSpeedChartData, {
-          level: levelsPassed,
+          level: nextLevelsPassed,
           speed:
-            levelsPassed > 0 && levelsPassed % 3 === 0
+            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
               ? (6.5 + currentSandGatheringSpeed) / 2
               : currentSandGatheringSpeed,
           maxSpeed: 13,
@@ -1895,6 +2043,17 @@ function IslandSimulator() {
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
                   Upgrades
                 </p>
+                <button
+                  type="button"
+                  onClick={buyMaxSelectedModeSpeed}
+                  disabled={
+                    money <
+                    getUpgradeCost(getSelectedModeSpeedUpgradeKey(currentMode))
+                  }
+                  className="w-full rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 px-3 py-2 text-sm font-bold transition-all duration-200 hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                >
+                  Auto Update {currentMode} Speed
+                </button>
                 <div className="grid grid-cols-4 gap-2">
                   {(Object.keys(upgrades) as UpgradeKey[])
                     .filter((key) => {
