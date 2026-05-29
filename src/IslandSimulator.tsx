@@ -991,430 +991,19 @@ function IslandSimulator() {
   const levelTotalSnow = getMaterialsPerTick(currentMode, snowLevel);
   const minRequiredSnow = Math.ceil(levelTotalSnow * 0.725);
 
-  // Initialize Snow gathering speed chart with level 0 starting value (always available)
+  // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
   useEffect(() => {
-    if (gatheringSpeedChartData.length === 0) {
-      setGatheringSpeedChartData([
-        {
-          level: 0,
-          speed: 7.5,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        },
-      ]);
-    }
-  }, []);
-
-  // Initialize Wood gathering speed chart when Wood mode unlocks
-  useEffect(() => {
-    if (canUseWood && woodGatheringSpeedChartData.length === 0) {
-      setWoodGatheringSpeedChartData([
-        {
-          level: levelsPassed,
-          speed: 5,
-          maxSpeed: 20,
-          minSpeed: 5,
-        },
-      ]);
-    }
-  }, [canUseWood]);
-
-  // Initialize Stone gathering speed chart when Stone mode unlocks
-  useEffect(() => {
-    if (canUseStone && stoneGatheringSpeedChartData.length === 0) {
-      setStoneGatheringSpeedChartData([
-        {
-          level: 0,
-          speed1: 0.2,
-          speed2: 0.29,
-          min1: 0.05,
-          max1: 0.2,
-          min2: 0.29,
-          max2: 1,
-        },
-      ]);
-    }
-  }, [canUseStone]);
-
-  // Initialize Iron gathering speed chart when Iron mode unlocks
-  useEffect(() => {
-    if (canUseIron && ironGatheringSpeedChartData.length === 0) {
-      setIronGatheringSpeedChartData([
-        {
-          level: levelsPassed,
-          speed: 12.5,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        },
-      ]);
-    }
-  }, [canUseIron]);
-
-  // Update chart data when levelsPassed changes and apply move speed penalty every 3 levels
-  useEffect(() => {
-    setChartData((prev) => {
-      const lastEntry = prev[prev.length - 1];
-      const newEntry = {
-        level: levelsPassed,
-        earned: totalEarned,
-        spent: totalSpent,
-      };
-
-      if (lastEntry && lastEntry.level === levelsPassed) {
-        return limitChartData([...prev.slice(0, -1), newEntry]);
-      }
-      return limitChartData([...prev, newEntry]);
-    });
-
-    // Apply move speed penalty every 3 levels (at levels 3, 6, 9, 12, etc.)
     if (levelsPassed > 0 && levelsPassed % 3 === 0) {
       setCurrentSpeed((prev) => {
         const { minSpeed } = gameSettings;
         const SPEED_DEGRADATION_RATE = 0.5;
-        const newSpeed = Math.max(
+        return Math.max(
           minSpeed,
           minSpeed + (prev - minSpeed) * (1 - SPEED_DEGRADATION_RATE),
         );
-        setMoveSpeedChartData((chartPrev) =>
-          limitChartData([
-            ...chartPrev,
-            {
-              level: levelsPassed,
-              speed: newSpeed,
-              maxSpeed: gameSettings.maxSpeed,
-              minSpeed: gameSettings.minSpeed,
-            },
-          ]),
-        );
-        return newSpeed;
-      });
-    } else if (levelsPassed > 0) {
-      // Just add move speed chart entry (gathering speeds handled by their own effects)
-      setMoveSpeedChartData((prev) =>
-        limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: currentSpeed,
-            maxSpeed: gameSettings.maxSpeed,
-            minSpeed: gameSettings.minSpeed,
-          },
-        ]),
-      );
-    }
-  }, [
-    levelsPassed,
-    gameSettings,
-    currentGatheringSpeed,
-    currentWoodGatheringSpeed,
-    currentStoneGatheringSpeed1,
-    currentStoneGatheringSpeed2,
-  ]);
-
-  // Update move speed chart data instantly when currentSpeed changes
-  useEffect(() => {
-    if (levelsPassed > 0) {
-      setMoveSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-        if (lastEntry && lastEntry.speed !== currentSpeed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: lastEntry.level,
-              speed: currentSpeed,
-              maxSpeed: gameSettings.maxSpeed,
-              minSpeed: gameSettings.minSpeed,
-            },
-          ]);
-        }
-        return prev;
       });
     }
   }, [currentSpeed, levelsPassed, gameSettings]);
-
-  // Update gathering speed chart data for all levels with Snow speed
-  useEffect(() => {
-    // Only show Snow speed data while Stone mode is not unlocked
-    if (levelsPassed > 0 && !canUseStone) {
-      setGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-
-        // Apply decrease formula every 3 levels
-        let displaySpeed = currentGatheringSpeed;
-        if (levelsPassed % 3 === 0) {
-          displaySpeed = (6.5 + currentGatheringSpeed) / 2;
-        }
-
-        // If we have an entry for this level, update it; otherwise add new one
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed: displaySpeed,
-              maxSpeed: 13,
-              minSpeed: 6.5,
-            },
-          ]);
-        }
-
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: displaySpeed,
-            maxSpeed: 13,
-            minSpeed: 6.5,
-          },
-        ]);
-      });
-    }
-  }, [currentGatheringSpeed, levelsPassed, canUseStone]);
-
-  // Update wood gathering speed chart data for all levels with Wood speed
-  useEffect(() => {
-    // Only show Wood speed data after Wood mode is unlocked
-    if (levelsPassed > 0 && canUseWood) {
-      setWoodGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-
-        // Apply decrease formula every 3 levels
-        let displaySpeed = currentWoodGatheringSpeed;
-        if (levelsPassed % 3 === 0) {
-          displaySpeed = (5 + currentWoodGatheringSpeed) / 2;
-        }
-
-        // If we have an entry for this level, update it; otherwise add new one
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed: displaySpeed,
-              maxSpeed: 20,
-              minSpeed: 5,
-            },
-          ]);
-        }
-
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: displaySpeed,
-            maxSpeed: 20,
-            minSpeed: 5,
-          },
-        ]);
-      });
-    }
-  }, [currentWoodGatheringSpeed, levelsPassed, canUseWood]);
-
-  // Update stone gathering speed chart data for all levels with Stone speed
-  useEffect(() => {
-    // Only show Stone speed data after Stone mode is unlocked
-    if (levelsPassed > 0 && canUseStone) {
-      setStoneGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-
-        let displaySpeed1 = currentStoneGatheringSpeed1;
-        let displaySpeed2 = currentStoneGatheringSpeed2;
-
-        // Apply decrease formula every 3 levels
-        if (levelsPassed % 3 === 0) {
-          displaySpeed1 = (0.05 + currentStoneGatheringSpeed1) / 2;
-          displaySpeed2 = (0.29 + currentStoneGatheringSpeed2) / 2;
-        }
-
-        // If we have an entry for this level, update it; otherwise add new one
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed1: displaySpeed1,
-              speed2: displaySpeed2,
-              min1: 0.05,
-              max1: 0.2,
-              min2: 0.29,
-              max2: 1,
-            },
-          ]);
-        }
-
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed1: displaySpeed1,
-            speed2: displaySpeed2,
-            min1: 0.05,
-            max1: 0.2,
-            min2: 0.29,
-            max2: 1,
-          },
-        ]);
-      });
-    }
-  }, [
-    currentStoneGatheringSpeed1,
-    currentStoneGatheringSpeed2,
-    levelsPassed,
-    currentMode,
-    canUseStone,
-  ]);
-
-  // Update iron gathering speed chart data for all levels with Iron speed
-  useEffect(() => {
-    // Only show Iron speed data after Iron mode is unlocked
-    if (levelsPassed > 0 && canUseIron) {
-      setIronGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-
-        // Apply decrease formula every 3 levels
-        let displaySpeed = currentIronGatheringSpeed;
-        if (levelsPassed % 3 === 0) {
-          displaySpeed = (5 + currentIronGatheringSpeed) / 2;
-        }
-
-        // If we have an entry for this level, update it; otherwise add new one
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed: displaySpeed,
-              maxSpeed: 13,
-              minSpeed: 5,
-            },
-          ]);
-        }
-
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: displaySpeed,
-            maxSpeed: 13,
-            minSpeed: 5,
-          },
-        ]);
-      });
-    }
-  }, [currentIronGatheringSpeed, levelsPassed, canUseIron]);
-
-  // Initialize Mud gathering speed chart when Mud mode unlocks
-  useEffect(() => {
-    if (canUseMud && mudGatheringSpeedChartData.length === 0) {
-      setMudGatheringSpeedChartData([
-        {
-          level: levelsPassed,
-          speed: 10.2,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        },
-      ]);
-    }
-  }, [canUseMud]);
-
-  // Update mud gathering speed chart data for all levels with Mud speed
-  useEffect(() => {
-    if (levelsPassed > 0 && canUseMud) {
-      setMudGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-        let displaySpeed = currentMudGatheringSpeed;
-        if (levelsPassed % 3 === 0) {
-          displaySpeed = (6.5 + currentMudGatheringSpeed) / 2;
-        }
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed: displaySpeed,
-              maxSpeed: 13,
-              minSpeed: 6.5,
-            },
-          ]);
-        }
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: displaySpeed,
-            maxSpeed: 13,
-            minSpeed: 6.5,
-          },
-        ]);
-      });
-    }
-  }, [currentMudGatheringSpeed, levelsPassed, canUseMud]);
-
-  // Initialize Sand gathering speed chart when Sand mode unlocks
-  useEffect(() => {
-    if (canUseSand && sandGatheringSpeedChartData.length === 0) {
-      setSandGatheringSpeedChartData([
-        {
-          level: levelsPassed,
-          speed: 10.2,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        },
-      ]);
-    }
-  }, [canUseSand]);
-
-  // Update sand gathering speed chart data for all levels with Sand speed
-  useEffect(() => {
-    if (levelsPassed > 0 && canUseSand) {
-      setSandGatheringSpeedChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-        let displaySpeed = currentSandGatheringSpeed;
-        if (levelsPassed % 3 === 0) {
-          displaySpeed = (6.5 + currentSandGatheringSpeed) / 2;
-        }
-        if (lastEntry && lastEntry.level === levelsPassed) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            {
-              level: levelsPassed,
-              speed: displaySpeed,
-              maxSpeed: 13,
-              minSpeed: 6.5,
-            },
-          ]);
-        }
-        return limitChartData([
-          ...prev,
-          {
-            level: levelsPassed,
-            speed: displaySpeed,
-            maxSpeed: 13,
-            minSpeed: 6.5,
-          },
-        ]);
-      });
-    }
-  }, [currentSandGatheringSpeed, levelsPassed, canUseSand]);
-
-  // Update economy chart data instantly when totalEarned or totalSpent changes
-  useEffect(() => {
-    if (levelsPassed > 0) {
-      setChartData((prev) => {
-        const lastEntry = prev[prev.length - 1];
-        if (
-          lastEntry &&
-          (lastEntry.earned !== totalEarned || lastEntry.spent !== totalSpent)
-        ) {
-          return limitChartData([
-            ...prev.slice(0, -1),
-            { level: lastEntry.level, earned: totalEarned, spent: totalSpent },
-          ]);
-        }
-        return prev;
-      });
-    }
-  }, [totalEarned, totalSpent, levelsPassed]);
 
   // Save game state to localStorage with debouncing - only saves after state changes stop for 500ms
   useEffect(() => {
@@ -1688,7 +1277,9 @@ function IslandSimulator() {
     const earnedAmount = levelTotalSnow;
     const moneyFromMaterial = earnedAmount * getSnowPriceMultiplier(snowLevel);
     const levelProgressBonus = getLevelProgressBonus(snowLevel);
-    const totalMoney = moneyFromMaterial + levelProgressBonus;
+    const fieldBonus =
+      currentMode === "Snow" ? 19 * getSnowPriceMultiplier(snowLevel) : 0;
+    const totalMoney = moneyFromMaterial + levelProgressBonus + fieldBonus;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -1716,7 +1307,9 @@ function IslandSimulator() {
     if (!amount || amount < minRequiredSnow || amount > levelTotalSnow) return;
     const moneyFromMaterial = amount * getSnowPriceMultiplier(snowLevel);
     const levelProgressBonus = getLevelProgressBonus(snowLevel);
-    const totalMoney = moneyFromMaterial + levelProgressBonus;
+    const fieldBonus =
+      currentMode === "Snow" ? 19 * getSnowPriceMultiplier(snowLevel) : 0;
+    const totalMoney = moneyFromMaterial + levelProgressBonus + fieldBonus;
 
     // Add to correct material type
     if (currentMode === "Snow") {
@@ -1774,7 +1367,129 @@ function IslandSimulator() {
     setSandGatheringSpeedChartData([]);
   }
 
+  function upsertChartEntry<T extends { level: number }>(
+    data: T[],
+    entry: T,
+  ): T[] {
+    if (entry.level <= 0) {
+      return data;
+    }
+
+    const lastEntry = data[data.length - 1];
+    if (lastEntry && lastEntry.level === entry.level) {
+      return limitChartData([...data.slice(0, -1), entry]);
+    }
+
+    return limitChartData([...data, entry]);
+  }
+
+  function buildSaveGraphState() {
+    const nextChartData = upsertChartEntry(chartData, {
+      level: levelsPassed,
+      earned: totalEarned,
+      spent: totalSpent,
+    });
+
+    const nextMoveSpeedChartData = upsertChartEntry(moveSpeedChartData, {
+      level: levelsPassed,
+      speed: currentSpeed,
+      maxSpeed: gameSettings.maxSpeed,
+      minSpeed: gameSettings.minSpeed,
+    });
+
+    const nextGatheringSpeedChartData = !canUseStone
+      ? upsertChartEntry(gatheringSpeedChartData, {
+          level: levelsPassed,
+          speed:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (6.5 + currentGatheringSpeed) / 2
+              : currentGatheringSpeed,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        })
+      : gatheringSpeedChartData;
+
+    const nextWoodGatheringSpeedChartData = canUseWood
+      ? upsertChartEntry(woodGatheringSpeedChartData, {
+          level: levelsPassed,
+          speed:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (5 + currentWoodGatheringSpeed) / 2
+              : currentWoodGatheringSpeed,
+          maxSpeed: 20,
+          minSpeed: 5,
+        })
+      : woodGatheringSpeedChartData;
+
+    const nextStoneGatheringSpeedChartData = canUseStone
+      ? upsertChartEntry(stoneGatheringSpeedChartData, {
+          level: levelsPassed,
+          speed1:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (0.2 + currentStoneGatheringSpeed1) / 2
+              : currentStoneGatheringSpeed1,
+          speed2:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (1 + currentStoneGatheringSpeed2) / 2
+              : currentStoneGatheringSpeed2,
+          min1: 0.05,
+          max1: 0.2,
+          min2: 0.29,
+          max2: 1,
+        })
+      : stoneGatheringSpeedChartData;
+
+    const nextIronGatheringSpeedChartData = canUseIron
+      ? upsertChartEntry(ironGatheringSpeedChartData, {
+          level: levelsPassed,
+          speed:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (5 + currentIronGatheringSpeed) / 2
+              : currentIronGatheringSpeed,
+          maxSpeed: 13,
+          minSpeed: 5,
+        })
+      : ironGatheringSpeedChartData;
+
+    const nextMudGatheringSpeedChartData = canUseMud
+      ? upsertChartEntry(mudGatheringSpeedChartData, {
+          level: levelsPassed,
+          speed:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (6.5 + currentMudGatheringSpeed) / 2
+              : currentMudGatheringSpeed,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        })
+      : mudGatheringSpeedChartData;
+
+    const nextSandGatheringSpeedChartData = canUseSand
+      ? upsertChartEntry(sandGatheringSpeedChartData, {
+          level: levelsPassed,
+          speed:
+            levelsPassed > 0 && levelsPassed % 3 === 0
+              ? (6.5 + currentSandGatheringSpeed) / 2
+              : currentSandGatheringSpeed,
+          maxSpeed: 13,
+          minSpeed: 6.5,
+        })
+      : sandGatheringSpeedChartData;
+
+    return {
+      chartData: nextChartData,
+      moveSpeedChartData: nextMoveSpeedChartData,
+      gatheringSpeedChartData: nextGatheringSpeedChartData,
+      woodGatheringSpeedChartData: nextWoodGatheringSpeedChartData,
+      stoneGatheringSpeedChartData: nextStoneGatheringSpeedChartData,
+      ironGatheringSpeedChartData: nextIronGatheringSpeedChartData,
+      mudGatheringSpeedChartData: nextMudGatheringSpeedChartData,
+      sandGatheringSpeedChartData: nextSandGatheringSpeedChartData,
+    };
+  }
+
   function saveGame() {
+    const saveGraphState = buildSaveGraphState();
+
     const gameState = {
       money,
       ice,
@@ -1790,16 +1505,22 @@ function IslandSimulator() {
       totalEarned,
       upgrades,
       buildings,
-      chartData,
+      chartData: saveGraphState.chartData,
       currentSpeed,
-      moveSpeedChartData,
+      moveSpeedChartData: saveGraphState.moveSpeedChartData,
       currentGatheringSpeed,
-      gatheringSpeedChartData,
+      gatheringSpeedChartData: saveGraphState.gatheringSpeedChartData,
       currentWoodGatheringSpeed,
-      woodGatheringSpeedChartData,
+      woodGatheringSpeedChartData: saveGraphState.woodGatheringSpeedChartData,
       currentStoneGatheringSpeed1,
       currentStoneGatheringSpeed2,
-      stoneGatheringSpeedChartData,
+      stoneGatheringSpeedChartData: saveGraphState.stoneGatheringSpeedChartData,
+      currentIronGatheringSpeed,
+      ironGatheringSpeedChartData: saveGraphState.ironGatheringSpeedChartData,
+      currentMudGatheringSpeed,
+      mudGatheringSpeedChartData: saveGraphState.mudGatheringSpeedChartData,
+      currentSandGatheringSpeed,
+      sandGatheringSpeedChartData: saveGraphState.sandGatheringSpeedChartData,
       gameSettings,
     };
 
@@ -2126,6 +1847,14 @@ function IslandSimulator() {
                       {fmt(minRequiredSnow)}
                     </span>
                   </p>
+                  {currentMode === "Snow" && (
+                    <p className="text-slate-500 mt-1">
+                      Field bonus:{" "}
+                      <span className="font-bold text-sky-300">
+                        +${fmt(19 * getSnowPriceMultiplier(snowLevel))}
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 <button
