@@ -895,6 +895,8 @@ function IslandSimulator() {
     getInitialState("buildings", generateBuildings()),
   );
   const [cleanAmount, setCleanAmount] = useState<string>("");
+  const [isAutomating, setIsAutomating] = useState(false);
+  const automatingRef = useRef(isAutomating);
   const [chartData, setChartData] = useState<
     Array<{ level: number; earned: number; spent: number }>
   >(() => getInitialState("chartData", []));
@@ -1086,6 +1088,128 @@ function IslandSimulator() {
     mudGatheringSpeedChartData,
     currentSandGatheringSpeed,
     sandGatheringSpeedChartData,
+  ]);
+
+  // Automation: build all houses by gathering materials and upgrading
+  useEffect(() => {
+    automatingRef.current = isAutomating;
+  }, [isAutomating]);
+
+  useEffect(() => {
+    if (!automatingRef.current) return;
+
+    const automationTick = setInterval(() => {
+      // Check if all buildings are complete
+      const allComplete = buildings.every((b) => b.isBuilt);
+      if (allComplete) {
+        setIsAutomating(false);
+        return;
+      }
+
+      // Find next unbuilt building
+      const nextBuilding = buildings.find((b) => !b.isBuilt);
+      if (!nextBuilding) return;
+
+      // Check if we have enough materials to build
+      const hasEnough =
+        (!nextBuilding.requiredMaterials.ice ||
+          ice >= nextBuilding.requiredMaterials.ice) &&
+        (!nextBuilding.requiredMaterials.wood ||
+          wood >= nextBuilding.requiredMaterials.wood) &&
+        (!nextBuilding.requiredMaterials.stone ||
+          stone >= nextBuilding.requiredMaterials.stone) &&
+        (!nextBuilding.requiredMaterials.iron ||
+          iron >= nextBuilding.requiredMaterials.iron) &&
+        (!nextBuilding.requiredMaterials.mud ||
+          mud >= nextBuilding.requiredMaterials.mud) &&
+        (!nextBuilding.requiredMaterials.sand ||
+          sand >= nextBuilding.requiredMaterials.sand);
+
+      if (hasEnough) {
+        // Build the building
+        buildBuilding(nextBuilding.id);
+        return;
+      }
+
+      // Determine which material is needed most and buy upgrades for it
+      let targetMode: Mode = "Snow";
+      let deficit = 0;
+
+      if (nextBuilding.requiredMaterials.ice) {
+        const needed = nextBuilding.requiredMaterials.ice - ice;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Snow";
+        }
+      }
+      if (nextBuilding.requiredMaterials.wood) {
+        const needed = nextBuilding.requiredMaterials.wood - wood;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Wood";
+        }
+      }
+      if (nextBuilding.requiredMaterials.stone) {
+        const needed = nextBuilding.requiredMaterials.stone - stone;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Stone";
+        }
+      }
+      if (nextBuilding.requiredMaterials.iron) {
+        const needed = nextBuilding.requiredMaterials.iron - iron;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Iron";
+        }
+      }
+      if (nextBuilding.requiredMaterials.mud) {
+        const needed = nextBuilding.requiredMaterials.mud - mud;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Mud";
+        }
+      }
+      if (nextBuilding.requiredMaterials.sand) {
+        const needed = nextBuilding.requiredMaterials.sand - sand;
+        if (needed > deficit) {
+          deficit = needed;
+          targetMode = "Sand";
+        }
+      }
+
+      // Switch mode if needed
+      if (currentMode !== targetMode) {
+        setCurrentMode(targetMode);
+        return;
+      }
+
+      // Try to buy speed upgrade for current mode
+      const speedKey = getSelectedModeSpeedUpgradeKey(targetMode);
+      const upgradeCost = getUpgradeCostAtLevel(speedKey, upgrades[speedKey]);
+
+      if (money >= upgradeCost && upgradeCost > 0) {
+        // Buy speed upgrade
+        buyUpgrade(speedKey);
+        return;
+      }
+
+      // Can't afford upgrade, complete a level to gather materials
+      clearLevelPerfect();
+    }, 300);
+
+    return () => clearInterval(automationTick);
+  }, [
+    buildings,
+    ice,
+    wood,
+    stone,
+    iron,
+    mud,
+    sand,
+    currentMode,
+    money,
+    upgrades,
   ]);
 
   function getLevelProgressBonus(level: number): number {
@@ -2013,6 +2137,18 @@ function IslandSimulator() {
                   Complete Level
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => setIsAutomating(!isAutomating)}
+                  className={`w-full rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 active:scale-95 ${
+                    isAutomating
+                      ? "bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30"
+                      : "bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30"
+                  }`}
+                >
+                  {isAutomating ? "Stop Automation" : "Start Automation"}
+                </button>
+
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -2479,7 +2615,10 @@ function IslandSimulator() {
               </h2>
               <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ bottom: 20 }}>
+                  <LineChart
+                    data={chartData}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
                       dataKey="level"
@@ -2487,8 +2626,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2542,7 +2681,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={gatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2551,8 +2690,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2615,7 +2754,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={woodGatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2624,8 +2763,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2688,7 +2827,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={stoneGatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2697,8 +2836,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2787,7 +2926,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={ironGatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2796,8 +2935,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2860,7 +2999,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={mudGatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2869,8 +3008,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
@@ -2933,7 +3072,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={sandGatheringSpeedChartData}
-                    margin={{ bottom: 20 }}
+                    margin={{ bottom: 100, left: 0, right: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2942,8 +3081,8 @@ function IslandSimulator() {
                       interval={0}
                       angle={-45}
                       textAnchor="end"
-                      tick={{ fontSize: 11 }}
-                      height={50}
+                      tick={{ fontSize: 9 }}
+                      height={80}
                     />
                     <YAxis
                       stroke="#94a3b8"
