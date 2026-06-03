@@ -2617,7 +2617,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2681,7 +2681,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={gatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2754,7 +2754,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={woodGatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2827,7 +2827,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={stoneGatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2926,7 +2926,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={ironGatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -2999,7 +2999,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={mudGatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
@@ -3072,7 +3072,7 @@ function IslandSimulator() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={sandGatheringSpeedChartData}
-                    margin={{ bottom: 100, left: 0, right: 0 }}
+                    margin={{ bottom: 100, left: 40, right: 40 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis
