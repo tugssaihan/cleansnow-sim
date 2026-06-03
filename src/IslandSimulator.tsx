@@ -1669,83 +1669,95 @@ function IslandSimulator() {
       minSpeed: gameSettings.minSpeed,
     });
 
-    const nextGatheringSpeedChartData = !canUseStone
-      ? upsertChartEntry(gatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (6.5 + currentGatheringSpeed) / 2
-              : currentGatheringSpeed,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        })
-      : gatheringSpeedChartData;
+    const nextGatheringSpeedChartData = upsertChartEntry(
+      gatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed:
+          nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (6.5 + currentGatheringSpeed) / 2
+            : currentGatheringSpeed,
+        maxSpeed: 13,
+        minSpeed: 6.5,
+      },
+    );
 
-    const nextWoodGatheringSpeedChartData = canUseWood
-      ? upsertChartEntry(woodGatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (5 + currentWoodGatheringSpeed) / 2
-              : currentWoodGatheringSpeed,
-          maxSpeed: 20,
-          minSpeed: 5,
-        })
-      : woodGatheringSpeedChartData;
+    const nextWoodGatheringSpeedChartData = upsertChartEntry(
+      woodGatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed: canUseWood
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (5 + currentWoodGatheringSpeed) / 2
+            : currentWoodGatheringSpeed
+          : 5,
+        maxSpeed: 20,
+        minSpeed: 5,
+      },
+    );
 
-    const nextStoneGatheringSpeedChartData = canUseStone
-      ? upsertChartEntry(stoneGatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed1:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (0.2 + currentStoneGatheringSpeed1) / 2
-              : currentStoneGatheringSpeed1,
-          speed2:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (0.29 + currentStoneGatheringSpeed2) / 2
-              : currentStoneGatheringSpeed2,
-          min1: 0.05,
-          max1: 0.2,
-          min2: 0.29,
-          max2: 1,
-        })
-      : stoneGatheringSpeedChartData;
+    const nextStoneGatheringSpeedChartData = upsertChartEntry(
+      stoneGatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed1: canUseStone
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (0.2 + currentStoneGatheringSpeed1) / 2
+            : currentStoneGatheringSpeed1
+          : 0.2,
+        speed2: canUseStone
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (0.29 + currentStoneGatheringSpeed2) / 2
+            : currentStoneGatheringSpeed2
+          : 0.29,
+        min1: 0.05,
+        max1: 0.2,
+        min2: 0.29,
+        max2: 1,
+      },
+    );
 
-    const nextIronGatheringSpeedChartData = canUseIron
-      ? upsertChartEntry(ironGatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (5 + currentIronGatheringSpeed) / 2
-              : currentIronGatheringSpeed,
-          maxSpeed: 13,
-          minSpeed: 5,
-        })
-      : ironGatheringSpeedChartData;
+    const nextIronGatheringSpeedChartData = upsertChartEntry(
+      ironGatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed: canUseIron
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (5 + currentIronGatheringSpeed) / 2
+            : currentIronGatheringSpeed
+          : 5,
+        maxSpeed: 13,
+        minSpeed: 5,
+      },
+    );
 
-    const nextMudGatheringSpeedChartData = canUseMud
-      ? upsertChartEntry(mudGatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (6.5 + currentMudGatheringSpeed) / 2
-              : currentMudGatheringSpeed,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        })
-      : mudGatheringSpeedChartData;
+    const nextMudGatheringSpeedChartData = upsertChartEntry(
+      mudGatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed: canUseMud
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (6.5 + currentMudGatheringSpeed) / 2
+            : currentMudGatheringSpeed
+          : 6.5,
+        maxSpeed: 13,
+        minSpeed: 6.5,
+      },
+    );
 
-    const nextSandGatheringSpeedChartData = canUseSand
-      ? upsertChartEntry(sandGatheringSpeedChartData, {
-          level: nextLevelsPassed,
-          speed:
-            nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
-              ? (6.5 + currentSandGatheringSpeed) / 2
-              : currentSandGatheringSpeed,
-          maxSpeed: 13,
-          minSpeed: 6.5,
-        })
-      : sandGatheringSpeedChartData;
+    const nextSandGatheringSpeedChartData = upsertChartEntry(
+      sandGatheringSpeedChartData,
+      {
+        level: nextLevelsPassed,
+        speed: canUseSand
+          ? nextLevelsPassed > 0 && nextLevelsPassed % 3 === 0
+            ? (6.5 + currentSandGatheringSpeed) / 2
+            : currentSandGatheringSpeed
+          : 6.5,
+        maxSpeed: 13,
+        minSpeed: 6.5,
+      },
+    );
 
     return {
       chartData: nextChartData,
